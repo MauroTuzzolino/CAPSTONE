@@ -2,11 +2,11 @@ import React from "react";
 import { Navbar, Nav, Container, Image } from "react-bootstrap";
 import { NavLink } from "react-router-dom";
 import { BsHouse, BsBoxArrowInRight } from "react-icons/bs"; // icone
-import logo from "../assets/LOGO-CAPSTONE.jpg";
+import logo from "../assets/LOGO-CAPSTONE.png";
 
 const AppNavbar = ({ isAuthenticated, user }) => {
   return (
-    <Navbar bg="black" variant="dark" expand="lg" className="custom-navbar">
+    <Navbar bg="dark" variant="dark" expand="lg" className="custom-navbar">
       <Container fluid>
         {/* Toggle per mobile */}
         <Navbar.Toggle aria-controls="basic-navbar-nav" className="ms-auto" />

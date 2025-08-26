@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import AppNavbar from "./components/NavBar";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "./App.css";
+import HomePage from "./components/HomePage";
 
 // Pagine di esempio
 const Home = () => <h1>Home Page</h1>;
@@ -17,23 +18,22 @@ function App() {
 
   return (
     <Router>
-      {/* Navbar con props */}
-      <AppNavbar isAuthenticated={isAuthenticated} user={user} />
+      <HomePage isAuthenticated={isAuthenticated} user={user}>
+        <div className="container mt-4">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/profile" element={<Profile />} />
+          </Routes>
 
-      <div className="container mt-4">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/profile" element={<Profile />} />
-        </Routes>
-
-        {/* Pulsante per simulare login/logout */}
-        <div className="mt-4">
-          <button className="btn btn-primary" onClick={() => setIsAuthenticated(!isAuthenticated)}>
-            {isAuthenticated ? "Logout" : "Login"}
-          </button>
+          {/* Pulsante per simulare login/logout */}
+          <div className="mt-4">
+            <button className="btn btn-primary" onClick={() => setIsAuthenticated(!isAuthenticated)}>
+              {isAuthenticated ? "Logout" : "Login"}
+            </button>
+          </div>
         </div>
-      </div>
+      </HomePage>
     </Router>
   );
 }
