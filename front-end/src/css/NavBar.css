@@ -1,0 +1,67 @@
+/* Stato attivo */
+.nav-link.active {
+  font-weight: bold;
+  color: #0d6efd !important;
+  position: relative;
+}
+
+.nav-link.active::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #0d6efd;
+  border-radius: 2px;
+}
+
+/* Hover sugli elementi nav */
+.navbar .nav-link {
+  position: relative;
+  transition: color 0.3s ease, transform 0.2s ease;
+  font-size: 1.1rem;
+}
+
+.navbar .nav-link:hover {
+  color: #ffc107;
+  transform: scale(1.05);
+}
+
+/* Effetto underline animato al hover */
+.navbar .nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #ffc107;
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.navbar .nav-link:hover::after {
+  width: 100%;
+}
+
+/* Logo responsive */
+.custom-navbar img {
+  max-height: 50px;
+  transition: transform 0.3s ease;
+}
+
+.custom-navbar img:hover {
+  transform: scale(1.1);
+}
+
+/* Responsive per mobile */
+@media (max-width: 768px) {
+  .custom-navbar img {
+    max-height: 40px;
+  }
+
+  .navbar .nav-link {
+    font-size: 1rem;
+  }
+}
