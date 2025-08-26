@@ -1,12 +1,12 @@
 # 🌌 BLACKHOLE
 
-Un sito web informativo dedicato all'astronomia, basato sulle API della NASA e arricchito con funzionalità social.
+Un sito web informativo dedicato all'astronomia, basato sulle Spaceflight News API e arricchito con funzionalità social.
 
 ---
 
 ## 📌 Descrizione del Progetto
 
-**BLACKHOLE** è un'applicazione web che permette agli appassionati di astronomia di consultare notizie e contenuti spaziali provenienti dalle **API ufficiali della NASA**, integrati con funzionalità personalizzate:
+**BLACKHOLE** è un'applicazione web che permette agli appassionati di astronomia di consultare notizie e contenuti spaziali provenienti dalle **Spaceflight News API**, integrati con funzionalità personalizzate:
 
 - Possibilità di **aggiungere mi piace e commenti** agli articoli (solo utenti autenticati).
 - Sistema di **autenticazione e registrazione** utenti.
@@ -31,11 +31,12 @@ L’obiettivo è creare un **social informativo a tema spazio**, con un’interf
 
 ### **API Esterne**
 
-- [NASA Open APIs](https://api.nasa.gov/)
+- [Spaceflight News API](https://api.spaceflightnewsapi.net)
 
 ### **Altre dipendenze**
 
 - **Bcrypt** per hashing password
+- **Cloudinary** per la gestione delle immagini profilo
 
 ---
 
@@ -43,7 +44,7 @@ L’obiettivo è creare un **social informativo a tema spazio**, con un’interf
 
 ### **Frontend**
 
-- **Home Page** → Visualizza i post provenienti dalle API NASA + funzionalità aggiuntive (like/commenti)
+- **Home Page** → Visualizza i post provenienti dalle Spaceflight News API + funzionalità aggiuntive (like/commenti)
 - **Pagina Profilo** → Login, Registrazione e gestione profilo utente
 
 ### **Backend**
@@ -61,7 +62,7 @@ L’obiettivo è creare un **social informativo a tema spazio**, con un’interf
 - ✅ Registrazione e login utente
 - ✅ Sistema di **like** e **commenti**
 - ✅ Ruoli con permessi dedicati (ADMIN / USER)
-- ✅ Integrazione con **NASA API**
+- ✅ Integrazione con **Spaceflight News API**
 
 ---
 

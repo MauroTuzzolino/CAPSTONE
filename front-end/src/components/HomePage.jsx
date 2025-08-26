@@ -1,15 +1,17 @@
-import React from "react";
 import AppNavbar from "./NavBar";
 import Footer from "./Footer";
+import HomeMain from "./HomeMain";
 
-const HomePage = ({ children, isAuthenticated, user }) => {
+const HomePage = ({ isAuthenticated, user }) => {
   return (
     <div className="d-flex flex-column min-vh-100">
       {/* Navbar */}
       <AppNavbar isAuthenticated={isAuthenticated} user={user} />
 
-      {/* Contenuto dinamico */}
-      <main className="flex-grow-1">{children}</main>
+      {/* Contenuto dinamico principale */}
+      <main className="flex-grow-1">
+        <HomeMain /> {/* Sezione centrale con news */}
+      </main>
 
       {/* Footer */}
       <Footer />
