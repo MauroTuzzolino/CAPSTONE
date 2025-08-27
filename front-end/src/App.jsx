@@ -3,11 +3,12 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import HomePage from "./components/HomePage";
+import LoginPage from "./components/LoginPage";
+import MainLayout from "./components/MainLayout";
+import AuthLayout from "./components/AuthLayout";
 
-// Pagine di esempio
-const Home = () => <h1>Home Page</h1>;
-const Login = () => <h1>Login Page</h1>;
 const Profile = () => <h1>Profilo Utente</h1>;
+const RegisterPage = () => <h1>Registrati</h1>; // Temporanea
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -18,22 +19,19 @@ function App() {
 
   return (
     <Router>
-      <HomePage isAuthenticated={isAuthenticated} user={user}>
-        <div className="container mt-4">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
+      <Routes>
+        {/* Layout principale con Navbar e Footer */}
+        <Route element={<MainLayout isAuthenticated={isAuthenticated} user={user} />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/profile" element={<Profile />} />
+        </Route>
 
-          {/* Pulsante per simulare login/logout */}
-          <div className="mt-4">
-            <button className="btn btn-primary" onClick={() => setIsAuthenticated(!isAuthenticated)}>
-              {isAuthenticated ? "Logout" : "Login"}
-            </button>
-          </div>
-        </div>
-      </HomePage>
+        {/* Layout senza Navbar e Footer */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
+      </Routes>
     </Router>
   );
 }
