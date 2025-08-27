@@ -7,8 +7,8 @@ import LoginPage from "./components/LoginPage";
 import MainLayout from "./components/MainLayout";
 import AuthLayout from "./components/AuthLayout";
 
-const Profile = () => <h1>Profilo Utente</h1>;
-const RegisterPage = () => <h1>Registrati</h1>; // Temporanea
+const Profile = () => <h1 className="text-center mt-5">Profilo Utente</h1>;
+const RegisterPage = () => <h1 className="text-center mt-5">Registrati</h1>;
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -20,15 +20,15 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Layout principale con Navbar e Footer */}
-        <Route element={<MainLayout isAuthenticated={isAuthenticated} user={user} />}>
+        {/* Layout principale */}
+        <Route element={<MainLayout isAuthenticated={isAuthenticated} user={user} setIsAuthenticated={setIsAuthenticated} />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
 
-        {/* Layout senza Navbar e Footer */}
+        {/* Layout auth */}
         <Route element={<AuthLayout />}>
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage setIsAuthenticated={setIsAuthenticated} />} />
           <Route path="/register" element={<RegisterPage />} />
         </Route>
       </Routes>

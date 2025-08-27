@@ -2,16 +2,17 @@ import React from "react";
 import { Form, Button, Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 
-const LoginPage = () => {
+const LoginPage = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setIsAuthenticated(true);
     navigate("/profile");
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100 ">
+    <div className="d-flex justify-content-center align-items-center vh-100">
       <Card className="p-4 shadow-lg" style={{ width: "100%", maxWidth: "400px" }}>
         {/* Pulsante indietro */}
         <Button variant="outline-secondary" className="mb-3 d-flex justify-content-center align-items-center gap-1 w-25" onClick={() => navigate("/")}>
