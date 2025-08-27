@@ -38,7 +38,6 @@ const AppNavbar = ({ isAuthenticated, user, setIsAuthenticated }) => {
                       <Image src={user?.profileImage || "https://via.placeholder.com/30"} roundedCircle width="30" height="30" className="me-2" />
                       {user?.name || "Profilo"}
                     </Nav.Link>
-                    <Nav.Link onClick={handleLogout}>Logout</Nav.Link>
                   </>
                 )}
               </Nav>
