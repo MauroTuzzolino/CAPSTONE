@@ -1,7 +1,6 @@
 import React from "react";
 import { Form, Button, Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "react-bootstrap-icons";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -12,11 +11,11 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-dark">
+    <div className="d-flex justify-content-center align-items-center vh-100 ">
       <Card className="p-4 shadow-lg" style={{ width: "100%", maxWidth: "400px" }}>
         {/* Pulsante indietro */}
-        <Button variant="outline-secondary" className="mb-3 d-flex align-items-center gap-1" onClick={() => navigate("/")}>
-          <ArrowLeft /> Indietro
+        <Button variant="outline-secondary" className="mb-3 d-flex justify-content-center align-items-center gap-1 w-25" onClick={() => navigate("/")}>
+          Indietro
         </Button>
 
         <h3 className="text-center mb-4">Login</h3>
@@ -33,7 +32,7 @@ const LoginPage = () => {
           </Form.Group>
 
           <div className="d-grid gap-2">
-            <Button variant="primary" type="submit">
+            <Button variant="warning" type="submit">
               Accedi
             </Button>
             <Button variant="secondary" onClick={() => navigate("/register")}>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Card, Spinner, Button, Container } from "react-bootstrap";
-import "../css/HomeMain.css";
+import "../css/HomePage.css";
 
 const HomeMain = () => {
   const [articles, setArticles] = useState([]);
