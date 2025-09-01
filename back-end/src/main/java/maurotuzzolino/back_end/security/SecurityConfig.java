@@ -1,5 +1,6 @@
 package maurotuzzolino.back_end.security;
 
+import maurotuzzolino.back_end.services.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,10 +14,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 public class SecurityConfig {
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtTokenUtil jwtTokenUtil,
-                                                   maurotuzzolino.back_end.services.UserService userService) throws Exception {
+    private final JwtTokenUtil jwtTokenUtil;
 
+    public SecurityConfig(JwtTokenUtil jwtTokenUtil) {
+        this.jwtTokenUtil = jwtTokenUtil;
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, UserService userService) throws Exception {
         JWTCheckerFilter jwtFilter = new JWTCheckerFilter(userService, jwtTokenUtil);
 
         http

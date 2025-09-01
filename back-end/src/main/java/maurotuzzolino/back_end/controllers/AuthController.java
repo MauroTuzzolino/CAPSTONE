@@ -19,16 +19,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final JwtTokenUtil jwtTokenUtil;
+    private final AuthenticationManager authenticationManager;
 
-    public AuthController(AuthenticationManager authenticationManager,
-                          UserService userService,
-                          JwtTokenUtil jwtTokenUtil) {
-        this.authenticationManager = authenticationManager;
+    public AuthController(UserService userService, JwtTokenUtil jwtTokenUtil,
+                          AuthenticationManager authenticationManager) {
         this.userService = userService;
         this.jwtTokenUtil = jwtTokenUtil;
+        this.authenticationManager = authenticationManager;
     }
 
     @PostMapping("/register")
@@ -44,7 +43,7 @@ public class AuthController {
         );
 
         User user = (User) authentication.getPrincipal();
-        String token = jwtTokenUtil.generateToken(user.getEmail(), String.valueOf(user.getRole()));
+        String token = jwtTokenUtil.generateToken(user.getEmail(), user.getRole().name());
 
         return ResponseEntity.ok(new LoginResponse(token));
     }
