@@ -3,6 +3,7 @@ package maurotuzzolino.back_end.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -12,13 +13,12 @@ import java.util.Map;
 @Component
 public class JwtTokenUtil {
 
-    // Segreto per firmare i token (meglio in application.properties)
-    private final String jwtSecret = "miaChiaveSuperSegreta12345";
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
-    // Durata del token: 1 ora
-    private final long jwtExpirationMs = 3600000;
+    @Value("${jwt.expiration}")
+    private long jwtExpirationMs;
 
-    // Genera token con email e ruolo
     public String generateToken(String email, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
@@ -32,17 +32,14 @@ public class JwtTokenUtil {
                 .compact();
     }
 
-    // Estrae email dal token
     public String getEmailFromToken(String token) {
         return getClaimsFromToken(token).getSubject();
     }
 
-    // Estrae ruolo dal token
     public String getRoleFromToken(String token) {
         return (String) getClaimsFromToken(token).get("role");
     }
 
-    // Controlla se il token è ancora valido
     public boolean validateToken(String token) {
         try {
             Claims claims = getClaimsFromToken(token);
@@ -52,7 +49,6 @@ public class JwtTokenUtil {
         }
     }
 
-    // Estrae Claims
     private Claims getClaimsFromToken(String token) {
         return Jwts.parser()
                 .setSigningKey(jwtSecret)
