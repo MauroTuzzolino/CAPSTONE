@@ -13,12 +13,16 @@ import java.util.Map;
 @Component
 public class JwtTokenUtil {
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    private final String secret;
+    private final long jwtExpirationMs;
 
-    @Value("${jwt.expiration}")
-    private long jwtExpirationMs;
+    public JwtTokenUtil(@Value("${jwt.secret}") String secret,
+                        @Value("${jwt.expiration-ms:86400000}") long jwtExpirationMs) {
+        this.secret = secret;
+        this.jwtExpirationMs = jwtExpirationMs;
+    }
 
+    // Genera il token
     public String generateToken(String email, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
@@ -28,18 +32,21 @@ public class JwtTokenUtil {
                 .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(SignatureAlgorithm.HS256, jwtSecret)
+                .signWith(SignatureAlgorithm.HS256, secret)
                 .compact();
     }
 
+    // Estrae email
     public String getEmailFromToken(String token) {
         return getClaimsFromToken(token).getSubject();
     }
 
+    // Estrae ruolo
     public String getRoleFromToken(String token) {
         return (String) getClaimsFromToken(token).get("role");
     }
 
+    // Valida token
     public boolean validateToken(String token) {
         try {
             Claims claims = getClaimsFromToken(token);
@@ -51,7 +58,7 @@ public class JwtTokenUtil {
 
     private Claims getClaimsFromToken(String token) {
         return Jwts.parser()
-                .setSigningKey(jwtSecret)
+                .setSigningKey(secret)
                 .parseClaimsJws(token)
                 .getBody();
     }
