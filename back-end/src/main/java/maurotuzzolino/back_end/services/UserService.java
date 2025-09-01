@@ -3,14 +3,14 @@ package maurotuzzolino.back_end.services;
 import maurotuzzolino.back_end.DTO.RegisterRequest;
 import maurotuzzolino.back_end.entities.User;
 import maurotuzzolino.back_end.enums.Role;
+import maurotuzzolino.back_end.exceptions.EmailAlreadyExistsException;
+import maurotuzzolino.back_end.exceptions.NotFoundException;
 import maurotuzzolino.back_end.repositories.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -26,7 +26,7 @@ public class UserService implements UserDetailsService {
     // Metodo per registrazione
     public User registerUser(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email già registrata");
+            throw new EmailAlreadyExistsException(request.getEmail());
         }
 
         User user = new User();
@@ -41,8 +41,9 @@ public class UserService implements UserDetailsService {
     }
 
     // Trova utente per email
-    public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+    public User findUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Utente non trovato con email: " + email));
     }
 
     // Metodo richiesto da UserDetailsService per il login
