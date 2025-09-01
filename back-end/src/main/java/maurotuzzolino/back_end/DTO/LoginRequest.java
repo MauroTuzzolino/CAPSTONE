@@ -1,6 +1,6 @@
 package maurotuzzolino.back_end.DTO;
 
-public class AuthRequest {
+public class LoginRequest {
     private String email;
     private String password;
 

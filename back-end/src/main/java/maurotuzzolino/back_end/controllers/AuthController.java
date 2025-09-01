@@ -1,7 +1,8 @@
 package maurotuzzolino.back_end.controllers;
 
-import maurotuzzolino.back_end.DTO.AuthRequest;
-import maurotuzzolino.back_end.DTO.AuthResponse;
+import maurotuzzolino.back_end.DTO.LoginRequest;
+import maurotuzzolino.back_end.DTO.LoginResponse;
+import maurotuzzolino.back_end.DTO.RegisterRequest;
 import maurotuzzolino.back_end.entities.User;
 import maurotuzzolino.back_end.security.JwtTokenUtil;
 import maurotuzzolino.back_end.services.UserService;
@@ -31,13 +32,13 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody User user) {
-        userService.registerUser(user);
+    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+        userService.registerUser(request);
         return ResponseEntity.ok("Utente registrato con successo");
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
@@ -45,6 +46,6 @@ public class AuthController {
         User user = (User) authentication.getPrincipal();
         String token = jwtTokenUtil.generateToken(user.getEmail(), String.valueOf(user.getRole()));
 
-        return ResponseEntity.ok(new AuthResponse(token));
+        return ResponseEntity.ok(new LoginResponse(token));
     }
 }

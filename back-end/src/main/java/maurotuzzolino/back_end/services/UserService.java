@@ -1,5 +1,6 @@
 package maurotuzzolino.back_end.services;
 
+import maurotuzzolino.back_end.DTO.RegisterRequest;
 import maurotuzzolino.back_end.entities.User;
 import maurotuzzolino.back_end.enums.Role;
 import maurotuzzolino.back_end.repositories.UserRepository;
@@ -19,12 +20,19 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public User registerUser(User user) {
-        if (userRepository.existsByEmail(user.getEmail())) {
+    public User registerUser(RegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email già registrata");
         }
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
-        user.setRole(Role.valueOf("USER"));
+
+        User user = new User();
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setRole(Role.USER);
+
         return userRepository.save(user);
     }
 
