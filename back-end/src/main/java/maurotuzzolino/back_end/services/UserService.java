@@ -13,18 +13,22 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+
 @Service
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
-    //Registrazione
+    // Registrazione
     public User registerUser(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException(request.getEmail());
@@ -38,16 +42,29 @@ public class UserService implements UserDetailsService {
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER);
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // Invia email di benvenuto
+        try {
+            emailService.sendEmail(
+                    savedUser.getEmail(),
+                    "Benvenuto su BlackHole!",
+                    "Ciao " + savedUser.getFirstName() + ", grazie per esserti registrato!"
+            );
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return savedUser;
     }
 
-    //Trova utente per email
+    // Trova utente per email
     public User findUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Utente non trovato con email: " + email));
     }
 
-    //Modifica completa (POST)
+    // Modifica completa (POST)
     public User updateUserFull(Long id, User updatedUser) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Utente non trovato con ID: " + id));
@@ -61,8 +78,20 @@ public class UserService implements UserDetailsService {
         existingUser.setUsername(updatedUser.getUsername());
         existingUser.setEmail(updatedUser.getEmail());
 
+        // Controllo se la password è stata modificata
         if (updatedUser.getPasswordHash() != null) {
             existingUser.setPasswordHash(passwordEncoder.encode(updatedUser.getPasswordHash()));
+
+            // Invia email notifica cambio password
+            try {
+                emailService.sendEmail(
+                        existingUser.getEmail(),
+                        "Password modificata",
+                        "Ciao " + existingUser.getFirstName() + ", la tua password è stata modificata correttamente."
+                );
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         if (updatedUser.getRole() != null) {
@@ -72,7 +101,7 @@ public class UserService implements UserDetailsService {
         return userRepository.save(existingUser);
     }
 
-    //Modifica parziale (PATCH)
+    // Modifica parziale (PATCH)
     public User updateUserPartial(Long id, User partialUpdate) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Utente non trovato con ID: " + id));
@@ -83,13 +112,24 @@ public class UserService implements UserDetailsService {
         if (partialUpdate.getEmail() != null) existingUser.setEmail(partialUpdate.getEmail());
         if (partialUpdate.getPasswordHash() != null) {
             existingUser.setPasswordHash(passwordEncoder.encode(partialUpdate.getPasswordHash()));
+
+            // Invia email notifica cambio password
+            try {
+                emailService.sendEmail(
+                        existingUser.getEmail(),
+                        "Password modificata",
+                        "Ciao " + existingUser.getFirstName() + ", la tua password è stata modificata correttamente."
+                );
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         if (partialUpdate.getRole() != null) existingUser.setRole(partialUpdate.getRole());
 
         return userRepository.save(existingUser);
     }
 
-    //Elimina utente (solo ADMIN)
+    // Elimina utente (solo ADMIN)
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
             throw new NotFoundException("Utente non trovato con ID: " + id);
@@ -97,7 +137,7 @@ public class UserService implements UserDetailsService {
         userRepository.deleteById(id);
     }
 
-    //Necessario per Spring Security (autenticazione)
+    // Necessario per Spring Security (autenticazione)
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return userRepository.findByEmail(email)
