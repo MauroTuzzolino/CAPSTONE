@@ -10,10 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -46,5 +45,19 @@ public class AuthController {
         String token = jwtTokenUtil.generateToken(user.getEmail(), user.getRole().name());
 
         return ResponseEntity.ok(new LoginResponse(token));
+    }
+
+    // Richiesta reset password
+    @PostMapping("/forgot-password")
+    public String forgotPassword(@RequestParam String email, @RequestParam String appUrl) throws IOException {
+        userService.createPasswordResetToken(email, appUrl);
+        return "Email di reset inviata, controlla la tua casella!";
+    }
+
+    // Reset password vero e proprio
+    @PostMapping("/reset-password")
+    public String resetPassword(@RequestParam String token, @RequestParam String newPassword) {
+        userService.resetPassword(token, newPassword);
+        return "Password modificata con successo!";
     }
 }

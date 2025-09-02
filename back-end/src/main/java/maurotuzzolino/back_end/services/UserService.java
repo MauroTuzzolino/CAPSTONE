@@ -1,11 +1,13 @@
 package maurotuzzolino.back_end.services;
 
 import maurotuzzolino.back_end.DTO.RegisterRequest;
+import maurotuzzolino.back_end.entities.PasswordResetToken;
 import maurotuzzolino.back_end.entities.User;
 import maurotuzzolino.back_end.enums.Role;
 import maurotuzzolino.back_end.exceptions.BadRequestException;
 import maurotuzzolino.back_end.exceptions.EmailAlreadyExistsException;
 import maurotuzzolino.back_end.exceptions.NotFoundException;
+import maurotuzzolino.back_end.repositories.PasswordResetTokenRepository;
 import maurotuzzolino.back_end.repositories.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,6 +16,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -21,11 +25,13 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final PasswordResetTokenRepository tokenRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService, PasswordResetTokenRepository tokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.tokenRepository = tokenRepository;
     }
 
     // Registrazione
@@ -142,5 +148,40 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Utente non trovato con email: " + email));
+    }
+
+    //Genera token e invia email
+    public void createPasswordResetToken(String email, String appUrl) throws IOException {
+        User user = findUserByEmail(email);
+        String token = UUID.randomUUID().toString();
+        LocalDateTime expiry = LocalDateTime.now().plusHours(1); // token valido 1h
+
+        PasswordResetToken resetToken = new PasswordResetToken(token, user, expiry);
+        tokenRepository.save(resetToken);
+
+        String resetLink = appUrl + "/api/auth/reset-password?token=" + token;
+
+        emailService.sendEmail(
+                user.getEmail(),
+                "Reset password",
+                "Ciao " + user.getFirstName() + ",\n\nClicca sul link per resettare la password: " + resetLink
+        );
+    }
+
+    //Resetta la password usando il token
+    public void resetPassword(String token, String newPassword) {
+        PasswordResetToken resetToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new BadRequestException("Token non valido"));
+
+        if (resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Token scaduto");
+        }
+
+        User user = resetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Elimino il token dopo l’uso
+        tokenRepository.delete(resetToken);
     }
 }
