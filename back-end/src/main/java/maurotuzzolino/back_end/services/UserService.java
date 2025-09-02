@@ -184,4 +184,12 @@ public class UserService implements UserDetailsService {
         // Elimino il token dopo l’uso
         tokenRepository.delete(resetToken);
     }
+
+    // Aggiorna immagine profilo
+    public User updateProfilePicture(Long id, String imageUrl) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato"));
+        user.setProfileImageUrl(imageUrl);
+        return userRepository.save(user);
+    }
 }

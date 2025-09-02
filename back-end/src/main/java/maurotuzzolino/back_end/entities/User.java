@@ -51,7 +51,12 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 20)
     private Role role;
 
+    @Column(length = 500)
+    private String profileImageUrl;
+
     public User() {
+        // Default avatar
+        this.profileImageUrl = "https://gravatar.com/avatar/bfc7e5dcf57f45be243798dc6ed2b684?s=400&d=mp&r=r";
     }
 
     public User(String firstName, String lastName, String username, String email, String passwordHash, Role role) {
@@ -61,6 +66,7 @@ public class User implements UserDetails {
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
+        this.profileImageUrl = "https://gravatar.com/avatar/bfc7e5dcf57f45be243798dc6ed2b684?s=400&d=mp&r=r";
     }
 
     // Getters e setters
@@ -118,6 +124,14 @@ public class User implements UserDetails {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     // Implementazioni UserDetails
