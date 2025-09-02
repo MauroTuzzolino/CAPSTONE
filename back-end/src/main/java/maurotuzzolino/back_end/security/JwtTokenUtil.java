@@ -33,7 +33,7 @@ public class JwtTokenUtil {
                 .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(Keys.hmacShaKeyFor(secret.getBytes()), SignatureAlgorithm.HS256) // Cambiato
+                .signWith(Keys.hmacShaKeyFor(secret.getBytes()), SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -58,8 +58,9 @@ public class JwtTokenUtil {
     }
 
     private Claims getClaimsFromToken(String token) {
-        return Jwts.parser()
-                .setSigningKey(secret)
+        return Jwts.parserBuilder()
+                .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes())) // ✅ FIX
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
