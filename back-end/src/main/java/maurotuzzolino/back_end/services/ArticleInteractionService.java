@@ -1,9 +1,6 @@
 package maurotuzzolino.back_end.services;
 
-import maurotuzzolino.back_end.DTO.ArticleDTO;
-import maurotuzzolino.back_end.DTO.CommentDTO;
-import maurotuzzolino.back_end.DTO.CreateCommentRequest;
-import maurotuzzolino.back_end.DTO.SpaceflightArticlesResponse;
+import maurotuzzolino.back_end.DTO.*;
 import maurotuzzolino.back_end.clients.SpaceflightNewsClient;
 import maurotuzzolino.back_end.entities.ArticleComment;
 import maurotuzzolino.back_end.entities.ArticleLike;
@@ -49,16 +46,13 @@ public class ArticleInteractionService {
         });
     }
 
-    // GET arricchito
+    // GET arricchito con paginazione
     @Transactional(readOnly = true)
-    public SpaceflightArticlesResponse fetchRawFromApi(int limit, int offset) {
-        return spaceflightNewsClient.fetchArticles(limit, offset);
-    }
+    public PagedResponse<ArticleDTO> getArticlesWithStats(int page, int size, User currentUser) {
+        int offset = page * size;
+        SpaceflightArticlesResponse resp = spaceflightNewsClient.fetchArticles(size, offset);
 
-    @Transactional
-    public List<ArticleDTO> getArticlesWithStats(int limit, int offset, User currentUser) {
-        SpaceflightArticlesResponse resp = fetchRawFromApi(limit, offset);
-        return resp.getResults().stream().map(item -> {
+        List<ArticleDTO> articles = resp.getResults().stream().map(item -> {
             // assicurati che esista l'articolo locale
             NewsArticle article = ensureArticle(
                     item.getId(),
@@ -84,6 +78,8 @@ public class ArticleInteractionService {
             dto.commentsCount = comments;
             return dto;
         }).toList();
+
+        return new PagedResponse<>(articles, page, size, resp.getCount());
     }
 
     // LIKE

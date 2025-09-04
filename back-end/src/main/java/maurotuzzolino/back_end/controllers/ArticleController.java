@@ -3,6 +3,7 @@ package maurotuzzolino.back_end.controllers;
 import maurotuzzolino.back_end.DTO.ArticleDTO;
 import maurotuzzolino.back_end.DTO.CommentDTO;
 import maurotuzzolino.back_end.DTO.CreateCommentRequest;
+import maurotuzzolino.back_end.DTO.PagedResponse;
 import maurotuzzolino.back_end.entities.User;
 import maurotuzzolino.back_end.services.ArticleInteractionService;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,12 +22,13 @@ public class ArticleController {
         this.articleService = articleService;
     }
 
-    // Lista arricchita: pubblica (o autenticata, come preferisci)
+    // Lista arricchita: pubblica
     @GetMapping
-    public List<ArticleDTO> list(@RequestParam(defaultValue = "20") int limit,
-                                 @RequestParam(defaultValue = "0") int offset,
-                                 @AuthenticationPrincipal User currentUser) {
-        return articleService.getArticlesWithStats(limit, offset, currentUser);
+    public PagedResponse<ArticleDTO> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal User currentUser) {
+        return articleService.getArticlesWithStats(page, size, currentUser);
     }
 
     // Metti like (autenticato)
