@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Spinner, Button, Container, Form } from "react-bootstrap";
+import { Card, Spinner, Button, Container, Form, Modal } from "react-bootstrap";
 import { BiLike } from "react-icons/bi";
 import { FaRegCommentDots } from "react-icons/fa";
 import "../css/HomePage.css";
@@ -8,8 +8,10 @@ const HomeMain = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [commentInputs, setCommentInputs] = useState({});
   const token = localStorage.getItem("token");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeArticle, setActiveArticle] = useState(null);
+  const [commentInput, setCommentInput] = useState("");
 
   const itemsPerPage = 5;
 
@@ -57,61 +59,87 @@ const HomeMain = () => {
   }, [token]);
 
   // Toggle like
-  const toggleLike = (id, userHasLiked) => {
+  const toggleLike = async (article) => {
     if (!token) return;
+    const url = `http://localhost:3001/api/articles/${article.id}/like`;
+    try {
+      const res = await fetch(url, {
+        method: article.userHasLiked ? "DELETE" : "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Errore like/unlike");
 
-    const url = `http://localhost:3001/api/articles/${id}/like`;
-    fetch(url, {
-      method: userHasLiked ? "DELETE" : "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Errore like/unlike");
-        return fetch("http://localhost:3001/api/articles?limit=20&offset=0", { headers: { Authorization: `Bearer ${token}` } });
-      })
-      .then((res) => res.json())
-      .then((data) => setArticles(data))
-      .catch((err) => console.error(err));
+      setArticles((prev) =>
+        prev.map((a) =>
+          a.id === article.id
+            ? {
+                ...a,
+                userHasLiked: !a.userHasLiked,
+                likesCount: a.userHasLiked ? a.likesCount - 1 : a.likesCount + 1,
+              }
+            : a
+        )
+      );
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  // Aggiungi commento
-  const addComment = (id) => {
-    if (!token) return;
+  // Apri modal commenti
+  const openCommentsModal = async (article) => {
+    // inizializza l'articolo attivo e svuota l'input
+    setActiveArticle({ ...article, comments: [] });
+    setCommentInput("");
+    setModalOpen(true);
 
-    const content = commentInputs[id];
-    if (!content || content.trim() === "") return;
+    // recupera i commenti dal backend
+    if (token) {
+      try {
+        const res = await fetch(`http://localhost:3001/api/articles/${article.id}/comments`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
 
-    fetch(`http://localhost:3001/api/articles/${id}/comments`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ content }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Errore aggiunta commento");
-        return fetch("http://localhost:3001/api/articles?limit=20&offset=0", { headers: { Authorization: `Bearer ${token}` } });
-      })
-      .then((res) => res.json())
-      .then((data) => {
-        setArticles(data);
-        setCommentInputs({ ...commentInputs, [id]: "" });
-      })
-      .catch((err) => console.error(err));
+        // aggiorna activeArticle con i commenti presi dal backend
+        setActiveArticle((prev) => ({ ...prev, comments: data }));
+      } catch (err) {
+        console.error("Errore nel caricamento dei commenti:", err);
+      }
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="text-center my-5">
-        <Spinner animation="border" variant="light" />
-        <p className="text-white">Caricamento articoli...</p>
-      </div>
-    );
-  }
+  // Invia commento
+  const submitComment = async () => {
+    if (!commentInput.trim()) return;
+
+    const url = `http://localhost:3001/api/articles/${activeArticle.id}/comments`;
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ content: commentInput }),
+      });
+
+      if (!res.ok) throw new Error("Errore aggiunta commento");
+
+      const newComment = await res.json();
+
+      // aggiorna activeArticle aggiungendo il nuovo commento in coda
+      setActiveArticle((prev) => ({
+        ...prev,
+        comments: [newComment, ...(prev.comments || [])], // aggiunge in cima
+        commentsCount: (prev.commentsCount || 0) + 1,
+      }));
+
+      // svuota input
+      setCommentInput("");
+
+      // opzionale: aggiorna anche l'articolo nello stato generale per il conteggio dei commenti
+      setArticles((prev) => prev.map((a) => (a.id === activeArticle.id ? { ...a, commentsCount: (a.commentsCount || 0) + 1 } : a)));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Paginazione
   const totalPages = Math.ceil(articles.length / itemsPerPage);
@@ -126,7 +154,14 @@ const HomeMain = () => {
         <h2 className="text-center mb-4 text-white">Ultime Notizie Spaziali</h2>
         <Container>
           {currentArticles.map((article) => (
-            <Card key={article.id} className="mb-4 shadow-sm fixed-card" onClick={() => window.open(article.url, "_blank")}>
+            <Card
+              key={article.id}
+              className="mb-4 shadow-sm fixed-card"
+              onClick={(e) => {
+                if (e.target.closest("button")) return;
+                window.open(article.url, "_blank");
+              }}
+            >
               <div className="row g-0 h-100 card-row">
                 <div className="col-12 col-md-4">
                   <Card.Img src={article.imageUrl} alt={article.title} className="fixed-image" />
@@ -143,54 +178,65 @@ const HomeMain = () => {
 
                     {/* Stats e azioni solo se loggato */}
                     {token && (
-                      <>
-                        {/* Stats */}
-                        <div className="d-flex justify-content-between align-items-center mt-2">
-                          <span>
-                            <BiLike size={20} /> {article.likesCount}
-                          </span>
-                          <span>
-                            <FaRegCommentDots size={20} /> {article.commentsCount}
-                          </span>
-                        </div>
-
-                        {/* Pulsante Like */}
+                      <div className="d-flex justify-content-between">
                         <Button
-                          size="sm"
                           variant={article.userHasLiked ? "danger" : "outline-primary"}
-                          className="mt-2"
                           onClick={(e) => {
-                            e.stopPropagation();
-                            toggleLike(article.id, article.userHasLiked);
+                            e.stopPropagation;
+                            toggleLike(article);
                           }}
                         >
-                          {article.userHasLiked ? "Unlike" : "Like"}
+                          <BiLike /> {article.likesCount || 0}
                         </Button>
-
-                        {/* Commenti */}
-                        <Form className="mt-2" onClick={(e) => e.stopPropagation()}>
-                          <Form.Control
-                            type="text"
-                            placeholder="Scrivi un commento..."
-                            value={commentInputs[article.id] || ""}
-                            onChange={(e) =>
-                              setCommentInputs({
-                                ...commentInputs,
-                                [article.id]: e.target.value,
-                              })
-                            }
-                          />
-                          <Button size="sm" className="mt-2" variant="success" onClick={() => addComment(article.id)}>
-                            Invia
-                          </Button>
-                        </Form>
-                      </>
+                        <Button
+                          variant="outline-secondary"
+                          onClick={(e) => {
+                            e.stopPropagation;
+                            openCommentsModal(article);
+                          }}
+                        >
+                          <FaRegCommentDots /> {article.commentsCount || 0}
+                        </Button>
+                      </div>
                     )}
                   </Card.Body>
                 </div>
               </div>
             </Card>
           ))}
+
+          {/*Modale*/}
+          <Modal show={modalOpen} onHide={() => setModalOpen(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Commenti</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {activeArticle && (
+                <>
+                  <p>Totale commenti: {activeArticle.commentsCount || 0}</p>
+
+                  {/* Form per nuovo commento */}
+                  <Form.Control type="text" placeholder="Scrivi un commento..." value={commentInput} onChange={(e) => setCommentInput(e.target.value)} />
+                  <Button className="mt-2 mb-3" onClick={submitComment}>
+                    Invia
+                  </Button>
+
+                  {/* Lista commenti */}
+                  {activeArticle.comments && activeArticle.comments.length > 0 ? (
+                    <div className="comments-list">
+                      {activeArticle.comments.map((c) => (
+                        <div key={c.id} className="mb-2 p-2 border rounded">
+                          <strong>{c.authorUsername}</strong>: {c.content}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted">Nessun commento presente</p>
+                  )}
+                </>
+              )}
+            </Modal.Body>
+          </Modal>
 
           {/* Paginazione */}
           <div className="d-flex justify-content-center mt-4 gap-2">
