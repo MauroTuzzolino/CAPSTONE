@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, Spinner, Button, Container, Form } from "react-bootstrap";
+import { BiLike } from "react-icons/bi";
+import { FaRegCommentDots } from "react-icons/fa";
 import "../css/HomePage.css";
 
 const HomeMain = () => {
@@ -40,9 +42,6 @@ const HomeMain = () => {
               imageUrl: a.image_url,
               publishedAt: a.published_at,
               summary: a.summary,
-              likesCount: 0,
-              commentsCount: 0,
-              userHasLiked: false,
             }))
           );
         }
@@ -61,7 +60,7 @@ const HomeMain = () => {
   const toggleLike = (id, userHasLiked) => {
     if (!token) return;
 
-    const url = `http://localhost:8080/api/articles/${id}/like`;
+    const url = `http://localhost:3001/api/articles/${id}/like`;
     fetch(url, {
       method: userHasLiked ? "DELETE" : "POST",
       headers: {
@@ -71,7 +70,7 @@ const HomeMain = () => {
     })
       .then((res) => {
         if (!res.ok) throw new Error("Errore like/unlike");
-        return fetch("http://localhost:8080/api/articles?limit=20&offset=0", { headers: { Authorization: `Bearer ${token}` } });
+        return fetch("http://localhost:3001/api/articles?limit=20&offset=0", { headers: { Authorization: `Bearer ${token}` } });
       })
       .then((res) => res.json())
       .then((data) => setArticles(data))
@@ -85,7 +84,7 @@ const HomeMain = () => {
     const content = commentInputs[id];
     if (!content || content.trim() === "") return;
 
-    fetch(`http://localhost:8080/api/articles/${id}/comments`, {
+    fetch(`http://localhost:3001/api/articles/${id}/comments`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -95,7 +94,7 @@ const HomeMain = () => {
     })
       .then((res) => {
         if (!res.ok) throw new Error("Errore aggiunta commento");
-        return fetch("http://localhost:8080/api/articles?limit=20&offset=0", { headers: { Authorization: `Bearer ${token}` } });
+        return fetch("http://localhost:3001/api/articles?limit=20&offset=0", { headers: { Authorization: `Bearer ${token}` } });
       })
       .then((res) => res.json())
       .then((data) => {
@@ -142,15 +141,20 @@ const HomeMain = () => {
                     </Card.Text>
                     <Card.Text className="summary-text">{article.summary?.slice(0, 150)}...</Card.Text>
 
-                    {/* Stats */}
-                    <div className="d-flex justify-content-between align-items-center mt-2">
-                      <span>👍 {article.likesCount}</span>
-                      <span>💬 {article.commentsCount}</span>
-                    </div>
-
-                    {/* Pulsanti se loggato */}
+                    {/* Stats e azioni solo se loggato */}
                     {token && (
                       <>
+                        {/* Stats */}
+                        <div className="d-flex justify-content-between align-items-center mt-2">
+                          <span>
+                            <BiLike size={20} /> {article.likesCount}
+                          </span>
+                          <span>
+                            <FaRegCommentDots size={20} /> {article.commentsCount}
+                          </span>
+                        </div>
+
+                        {/* Pulsante Like */}
                         <Button
                           size="sm"
                           variant={article.userHasLiked ? "danger" : "outline-primary"}
@@ -163,6 +167,7 @@ const HomeMain = () => {
                           {article.userHasLiked ? "Unlike" : "Like"}
                         </Button>
 
+                        {/* Commenti */}
                         <Form className="mt-2" onClick={(e) => e.stopPropagation()}>
                           <Form.Control
                             type="text"
