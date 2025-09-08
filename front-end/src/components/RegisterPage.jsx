@@ -5,27 +5,41 @@ import { useNavigate } from "react-router-dom";
 const RegisterPage = ({ setIsAuthenticated, setUser }) => {
   const navigate = useNavigate();
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
 
-    // Simulazione registrazione: recupero dati dal form
     const formData = new FormData(e.target);
-    const name = formData.get("name");
-    const surname = formData.get("surname");
-    const email = formData.get("email");
-    const username = formData.get("username");
+    const body = {
+      firstName: formData.get("name"),
+      lastName: formData.get("surname"),
+      username: formData.get("username"),
+      email: formData.get("email"),
+      password: formData.get("password"),
+    };
 
-    // Aggiorna stato utente
-    setUser({
-      name: `${name} ${surname}`,
-      email,
-      username,
-      profileImage: "https://via.placeholder.com/30",
-    });
+    try {
+      const res = await fetch("http://localhost:3001/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 
-    setIsAuthenticated(true);
+      if (res.status === 409) {
+        // Email già registrata
+        alert("⚠️ L'email inserita è già registrata!");
+        return;
+      }
 
-    navigate("/profile");
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Errore nella registrazione");
+      }
+
+      alert("✅ Registrazione completata!");
+      navigate("/login");
+    } catch (err) {
+      alert("❌ " + err.message);
+    }
   };
 
   return (
