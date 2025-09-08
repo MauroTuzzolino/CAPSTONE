@@ -32,7 +32,7 @@ const HomeMain = () => {
         const data = await res.json();
 
         if (token) {
-          setArticles(data);
+          setArticles(data.content || []);
         } else {
           setArticles(
             data.results.map((a) => ({
