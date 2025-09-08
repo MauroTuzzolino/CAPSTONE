@@ -47,7 +47,7 @@ public class ArticleInteractionService {
     }
 
     // GET arricchito con paginazione
-    @Transactional(readOnly = true)
+    @Transactional
     public PagedResponse<ArticleDTO> getArticlesWithStats(int page, int size, User currentUser) {
         int offset = page * size;
         SpaceflightArticlesResponse resp = spaceflightNewsClient.fetchArticles(size, offset);

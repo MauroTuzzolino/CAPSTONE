@@ -32,35 +32,29 @@ public class JWTCheckerFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        // Se l'header non c'è o non inizia con "Bearer ", lancio eccezione
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new UnauthorizedException("Token mancante o malformato");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.replace("Bearer ", "");
+            if (!jwtTokenUtil.validateToken(token)) {
+                throw new UnauthorizedException("Token non valido o scaduto");
+            }
+
+            String email = jwtTokenUtil.getEmailFromToken(token);
+            User user = userService.findUserByEmail(email);
+
+            Authentication auth = new UsernamePasswordAuthenticationToken(
+                    user, null, user.getAuthorities()
+            );
+            SecurityContextHolder.getContext().setAuthentication(auth);
         }
 
-        // Estraggo il token dall'header
-        String token = authHeader.replace("Bearer ", "");
-
-        // Valido il token
-        if (!jwtTokenUtil.validateToken(token)) {
-            throw new UnauthorizedException("Token non valido o scaduto");
-        }
-
-        // Recupero l'utente dal database
-        String email = jwtTokenUtil.getEmailFromToken(token);
-        User user = userService.findUserByEmail(email);
-
-        // Setto l'autenticazione nel Security Context
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                user, null, user.getAuthorities()
-        );
-        SecurityContextHolder.getContext().setAuthentication(auth);
-
-        // Passo la richiesta al prossimo filtro/controller
         filterChain.doFilter(request, response);
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return new AntPathMatcher().match("/api/auth/**", request.getServletPath());
+        // Non filtrare login/register e tutte le preflight OPTIONS
+        return new AntPathMatcher().match("/api/auth/**", request.getServletPath())
+                || "OPTIONS".equalsIgnoreCase(request.getMethod());
     }
+
 }

@@ -13,32 +13,11 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
 
-  // 🔹 Pulizia token all'avvio
+  // Pulizia token all'avvio
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        // Proviamo a decodificare il payload del JWT
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        const now = Date.now() / 1000;
-
-        // Se il token è scaduto → rimuovi
-        if (payload.exp && payload.exp < now) {
-          localStorage.removeItem("token");
-          setIsAuthenticated(false);
-          setUser(null);
-        } else {
-          // Token valido → mantieni stato autenticato
-          setIsAuthenticated(true);
-          setUser({ email: payload.sub, id: payload.id }); // oppure quello che hai nel payload
-        }
-      } catch (err) {
-        // Token malformato → rimuovi
-        localStorage.removeItem("token");
-        setIsAuthenticated(false);
-        setUser(null);
-      }
-    }
+    localStorage.removeItem("token");
+    setIsAuthenticated(false);
+    setUser(null);
   }, []);
 
   return (

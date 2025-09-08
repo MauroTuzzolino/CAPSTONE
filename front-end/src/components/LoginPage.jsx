@@ -1,14 +1,47 @@
-import React from "react";
-import { Form, Button, Card } from "react-bootstrap";
+import React, { useState } from "react";
+import { Form, Button, Card, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 
-const LoginPage = ({ setIsAuthenticated }) => {
+const LoginPage = ({ setIsAuthenticated, setUser }) => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsAuthenticated(true);
-    navigate("/profile");
+    setError("");
+
+    try {
+      const res = await fetch("http://localhost:3001/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Errore durante il login");
+      }
+
+      const data = await res.json();
+      const token = data.token;
+
+      // Salvo il token nel localStorage
+      localStorage.setItem("token", token);
+
+      // Decodifico il JWT per ottenere informazioni utente
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setUser({ email: payload.sub, id: payload.id });
+
+      // Stato autenticato
+      setIsAuthenticated(true);
+
+      // Reindirizzo al profilo
+      navigate("/profile");
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
@@ -21,16 +54,24 @@ const LoginPage = ({ setIsAuthenticated }) => {
 
         <h3 className="text-center mb-4">Login</h3>
 
+        {error && <Alert variant="danger">{error}</Alert>}
+
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="formEmail">
             <Form.Label>Email</Form.Label>
-            <Form.Control type="email" placeholder="Inserisci la tua email" required />
+            <Form.Control type="email" placeholder="Inserisci la tua email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="formPassword">
             <Form.Label>Password</Form.Label>
-            <Form.Control type="password" placeholder="Inserisci la tua password" required />
+            <Form.Control type="password" placeholder="Inserisci la tua password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </Form.Group>
+
+          <div className="mb-3">
+            <Button variant="link" onClick={() => navigate("/forgot-password")}>
+              Password dimenticata?
+            </Button>
+          </div>
 
           <div className="d-grid gap-2">
             <Button variant="warning" type="submit">
