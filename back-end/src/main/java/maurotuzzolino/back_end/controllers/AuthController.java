@@ -3,6 +3,7 @@ package maurotuzzolino.back_end.controllers;
 import maurotuzzolino.back_end.DTO.LoginRequest;
 import maurotuzzolino.back_end.DTO.LoginResponse;
 import maurotuzzolino.back_end.DTO.RegisterRequest;
+import maurotuzzolino.back_end.DTO.ResetPasswordRequest;
 import maurotuzzolino.back_end.entities.User;
 import maurotuzzolino.back_end.security.JwtTokenUtil;
 import maurotuzzolino.back_end.services.UserService;
@@ -56,8 +57,8 @@ public class AuthController {
 
     // Reset password vero e proprio
     @PostMapping("/reset-password")
-    public String resetPassword(@RequestParam String token, @RequestParam String newPassword) {
-        userService.resetPassword(token, newPassword);
-        return "Password modificata con successo!";
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest body) {
+        userService.resetPassword(body.getToken(), body.getNewPassword());
+        return ResponseEntity.ok().build();
     }
 }

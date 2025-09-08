@@ -159,7 +159,7 @@ public class UserService implements UserDetailsService {
         PasswordResetToken resetToken = new PasswordResetToken(token, user, expiry);
         tokenRepository.save(resetToken);
 
-        String resetLink = appUrl + "/api/auth/reset-password?token=" + token;
+        String resetLink = appUrl + "/reset-password?token=" + token;
 
         emailService.sendEmail(
                 user.getEmail(),

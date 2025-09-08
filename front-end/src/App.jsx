@@ -8,6 +8,8 @@ import RegisterPage from "./components/RegisterPage";
 import MainLayout from "./components/MainLayout";
 import AuthLayout from "./components/AuthLayout";
 import ProfilePage from "./components/ProfilePage";
+import ForgotPasswordPage from "./components/ForgotPasswordPage";
+import ResetPasswordPage from "./components/ResetPasswordPage";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,6 +35,8 @@ function App() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage setIsAuthenticated={setIsAuthenticated} setUser={setUser} />} />
           <Route path="/register" element={<RegisterPage setIsAuthenticated={setIsAuthenticated} setUser={setUser} />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Route>
       </Routes>
     </Router>
