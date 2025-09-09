@@ -29,16 +29,10 @@ const AppNavbar = ({ isAuthenticated, user, setIsAuthenticated }) => {
                     <BsBoxArrowInRight /> Login
                   </Nav.Link>
                 ) : (
-                  <>
-                    <Nav.Link
-                      as={NavLink}
-                      to="/profile"
-                      className={({ isActive }) => (isActive ? "active " : "") + "d-flex align-items-center nav-link-custom"}
-                    >
-                      <Image src={user?.profileImage || "https://via.placeholder.com/30"} roundedCircle width="30" height="30" className="me-2" />
-                      {user?.name || "Profilo"}
-                    </Nav.Link>
-                  </>
+                  <Nav.Link as={NavLink} to="/profile" className={({ isActive }) => (isActive ? "active " : "") + "d-flex align-items-center nav-link-custom"}>
+                    <Image src={user?.profileImageUrl || "https://via.placeholder.com/30"} roundedCircle width="30" height="30" className="me-2" />
+                    {user?.username || "Profilo"}
+                  </Nav.Link>
                 )}
               </Nav>
 
