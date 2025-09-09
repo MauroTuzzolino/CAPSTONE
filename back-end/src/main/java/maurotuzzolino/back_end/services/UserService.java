@@ -1,12 +1,16 @@
 package maurotuzzolino.back_end.services;
 
+import maurotuzzolino.back_end.DTO.ArticleDTO;
 import maurotuzzolino.back_end.DTO.RegisterRequest;
+import maurotuzzolino.back_end.entities.ArticleLike;
+import maurotuzzolino.back_end.entities.NewsArticle;
 import maurotuzzolino.back_end.entities.PasswordResetToken;
 import maurotuzzolino.back_end.entities.User;
 import maurotuzzolino.back_end.enums.Role;
 import maurotuzzolino.back_end.exceptions.BadRequestException;
 import maurotuzzolino.back_end.exceptions.EmailAlreadyExistsException;
 import maurotuzzolino.back_end.exceptions.NotFoundException;
+import maurotuzzolino.back_end.repositories.ArticleLikeRepository;
 import maurotuzzolino.back_end.repositories.PasswordResetTokenRepository;
 import maurotuzzolino.back_end.repositories.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,7 +21,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -26,12 +32,14 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final PasswordResetTokenRepository tokenRepository;
+    private final ArticleLikeRepository articleLikeRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService, PasswordResetTokenRepository tokenRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService, PasswordResetTokenRepository tokenRepository, ArticleLikeRepository articleLikeRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.tokenRepository = tokenRepository;
+        this.articleLikeRepository = articleLikeRepository;
     }
 
     // Registrazione
@@ -191,5 +199,36 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new RuntimeException("Utente non trovato"));
         user.setProfileImageUrl(imageUrl);
         return userRepository.save(user);
+    }
+
+    // articoli piaciuti dall’utente
+    public List<ArticleDTO> getLikedArticles(User user) {
+        List<ArticleLike> likes = articleLikeRepository.findByUser(user);
+
+        return likes.stream()
+                .map(like -> mapToDTO(like.getArticle(), user))
+                .collect(Collectors.toList());
+    }
+
+    // conversione entity → DTO
+    private ArticleDTO mapToDTO(NewsArticle article, User currentUser) {
+        ArticleDTO dto = new ArticleDTO();
+        dto.id = article.getId();
+        dto.title = safe(article.getTitle());
+        dto.url = safe(article.getUrl());
+        dto.imageUrl = safe(article.getImageUrl());
+
+        dto.publishedAt = null;
+        dto.summary = "";
+
+        dto.likesCount = articleLikeRepository.countByArticle(article);
+        dto.userHasLiked = articleLikeRepository.existsByUserAndArticle(currentUser, article);
+        dto.commentsCount = 0;
+
+        return dto;
+    }
+
+    private String safe(String value) {
+        return value != null ? value : "";
     }
 }

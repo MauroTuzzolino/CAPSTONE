@@ -1,5 +1,6 @@
 package maurotuzzolino.back_end.controllers;
 
+import maurotuzzolino.back_end.DTO.ArticleDTO;
 import maurotuzzolino.back_end.entities.User;
 import maurotuzzolino.back_end.enums.Role;
 import maurotuzzolino.back_end.exceptions.BadRequestException;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -71,5 +73,18 @@ public class UserController {
 
         String imageUrl = cloudinaryService.uploadImage(file);
         return userService.updateProfilePicture(id, imageUrl);
+    }
+
+    // Endpoint: articoli piaciuti dall’utente loggato
+    @GetMapping("/me/liked-articles")
+    public List<ArticleDTO> getLikedArticles(@AuthenticationPrincipal User currentUser) {
+        return userService.getLikedArticles(currentUser);
+    }
+
+    // GET /api/users/me
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public User getCurrentUser(@AuthenticationPrincipal User currentUser) {
+        return currentUser;
     }
 }
