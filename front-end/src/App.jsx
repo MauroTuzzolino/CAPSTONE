@@ -17,9 +17,15 @@ function App() {
 
   // Pulizia token all'avvio
   useEffect(() => {
-    localStorage.removeItem("token");
-    setIsAuthenticated(false);
-    setUser(null);
+    const token = localStorage.getItem("token");
+    if (token) {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setUser({ email: payload.sub, id: payload.id, username: payload.username });
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+      setUser(null);
+    }
   }, []);
 
   return (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Spinner, Button, Container, Form, Modal } from "react-bootstrap";
+import { Card, Button, Container, Form, Modal } from "react-bootstrap";
 import { BiLike } from "react-icons/bi";
 import { FaRegCommentDots } from "react-icons/fa";
 import "../css/HomePage.css";
@@ -14,6 +14,7 @@ const HomeMain = () => {
   const [commentInput, setCommentInput] = useState("");
 
   const itemsPerPage = 5;
+  const fallbackImage = "/images/image-not-found.png"; // immagine default nella cartella public/images
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -22,11 +23,9 @@ const HomeMain = () => {
         let options = {};
 
         if (token) {
-          // API privata con autenticazione
           url = "http://localhost:3001/api/articles?limit=20&offset=0";
           options = { headers: { Authorization: `Bearer ${token}` } };
         } else {
-          // API pubblica Spaceflight
           url = "https://api.spaceflightnewsapi.net/v4/articles?limit=20";
         }
 
@@ -87,20 +86,14 @@ const HomeMain = () => {
 
   // Apri modal commenti
   const openCommentsModal = async (article) => {
-    // inizializza l'articolo attivo e svuota l'input
     setActiveArticle({ ...article, comments: [] });
     setCommentInput("");
     setModalOpen(true);
 
-    // recupera i commenti dal backend
     if (token) {
       try {
-        const res = await fetch(`http://localhost:3001/api/articles/${article.id}/comments`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(`http://localhost:3001/api/articles/${article.id}/comments`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
-
-        // aggiorna activeArticle con i commenti presi dal backend
         setActiveArticle((prev) => ({ ...prev, comments: data }));
       } catch (err) {
         console.error("Errore nel caricamento dei commenti:", err);
@@ -116,7 +109,10 @@ const HomeMain = () => {
     try {
       const res = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ content: commentInput }),
       });
 
@@ -124,17 +120,14 @@ const HomeMain = () => {
 
       const newComment = await res.json();
 
-      // aggiorna activeArticle aggiungendo il nuovo commento in coda
       setActiveArticle((prev) => ({
         ...prev,
-        comments: [newComment, ...(prev.comments || [])], // aggiunge in cima
+        comments: [newComment, ...(prev.comments || [])],
         commentsCount: (prev.commentsCount || 0) + 1,
       }));
 
-      // svuota input
       setCommentInput("");
 
-      // opzionale: aggiorna anche l'articolo nello stato generale per il conteggio dei commenti
       setArticles((prev) => prev.map((a) => (a.id === activeArticle.id ? { ...a, commentsCount: (a.commentsCount || 0) + 1 } : a)));
     } catch (err) {
       console.error(err);
@@ -145,6 +138,13 @@ const HomeMain = () => {
   const totalPages = Math.ceil(articles.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentArticles = articles.slice(startIndex, startIndex + itemsPerPage);
+
+  if (loading)
+    return (
+      <div className="text-center my-5">
+        <h4 className="text-white">Caricamento articoli...</h4>
+      </div>
+    );
 
   return (
     <div className="d-flex justify-content-center my-4">
@@ -164,7 +164,15 @@ const HomeMain = () => {
             >
               <div className="row g-0 h-100 card-row">
                 <div className="col-12 col-md-4">
-                  <Card.Img src={article.imageUrl} alt={article.title} className="fixed-image" />
+                  <Card.Img
+                    src={article.imageUrl || fallbackImage}
+                    alt={article.title}
+                    className="fixed-image"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = fallbackImage;
+                    }}
+                  />
                 </div>
                 <div className="col-12 col-md-8">
                   <Card.Body className="d-flex flex-column h-100">
@@ -176,13 +184,12 @@ const HomeMain = () => {
                     </Card.Text>
                     <Card.Text className="summary-text">{article.summary?.slice(0, 150)}...</Card.Text>
 
-                    {/* Stats e azioni solo se loggato */}
                     {token && (
                       <div className="d-flex justify-content-between">
                         <Button
                           variant={article.userHasLiked ? "danger" : "outline-primary"}
                           onClick={(e) => {
-                            e.stopPropagation;
+                            e.stopPropagation();
                             toggleLike(article);
                           }}
                         >
@@ -191,7 +198,7 @@ const HomeMain = () => {
                         <Button
                           variant="outline-secondary"
                           onClick={(e) => {
-                            e.stopPropagation;
+                            e.stopPropagation();
                             openCommentsModal(article);
                           }}
                         >
@@ -205,7 +212,7 @@ const HomeMain = () => {
             </Card>
           ))}
 
-          {/*Modale*/}
+          {/* Modal commenti */}
           <Modal show={modalOpen} onHide={() => setModalOpen(false)}>
             <Modal.Header closeButton>
               <Modal.Title>Commenti</Modal.Title>
@@ -214,14 +221,11 @@ const HomeMain = () => {
               {activeArticle && (
                 <>
                   <p>Totale commenti: {activeArticle.commentsCount || 0}</p>
-
-                  {/* Form per nuovo commento */}
                   <Form.Control type="text" placeholder="Scrivi un commento..." value={commentInput} onChange={(e) => setCommentInput(e.target.value)} />
                   <Button className="mt-2 mb-3" onClick={submitComment}>
                     Invia
                   </Button>
 
-                  {/* Lista commenti */}
                   {activeArticle.comments && activeArticle.comments.length > 0 ? (
                     <div className="comments-list">
                       {activeArticle.comments.map((c) => (
