@@ -94,12 +94,7 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
         <Col xs={12} lg={4} className="mb-4">
           <Card className="p-3 shadow-sm h-100">
             <div className="d-flex justify-content-center m-3">
-              <Image
-                src={user?.profileImageUrl || "https://avatar.iran.liara.run/username?username=[firstname+lastname]"}
-                roundedCircle
-                width="100"
-                height="100"
-              />
+              <Image src={user?.profileImageUrl || ""} roundedCircle width="100" height="100" />
             </div>
 
             {!editing ? (
@@ -163,7 +158,7 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
         <Col xs={12} lg={8} className="mb-4">
           <div>
             {loadingLikes ? (
-              <p>Caricamento articoli piaciuti...</p>
+              <p className="text-white">Caricamento articoli piaciuti...</p>
             ) : likedArticles.length === 0 ? (
               <p className="text-muted">Non hai ancora messo like a nessun articolo.</p>
             ) : (
