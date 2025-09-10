@@ -3,6 +3,8 @@ import { Navbar, Nav, Container, Image } from "react-bootstrap";
 import { NavLink } from "react-router-dom";
 import { BsHouse, BsBoxArrowInRight } from "react-icons/bs";
 import logo from "../assets/LOGO-CAPSTONE.png";
+import "../css/NavBar.css";
+import { GiRocketThruster } from "react-icons/gi";
 
 const AppNavbar = ({ isAuthenticated, user, setIsAuthenticated }) => {
   const handleLogout = () => {
@@ -10,36 +12,35 @@ const AppNavbar = ({ isAuthenticated, user, setIsAuthenticated }) => {
   };
 
   return (
-    <Navbar bg="dark" variant="dark" expand="lg" className="custom-navbar">
+    <Navbar expand="lg" className="custom-navbar">
       <Container fluid>
-        <Navbar.Toggle aria-controls="basic-navbar-nav" className="ms-auto" />
+        <Navbar.Toggle aria-controls="basic-navbar-nav" className="ms-auto custom-toggler">
+          <GiRocketThruster size={28} color="#fff" />
+        </Navbar.Toggle>
         <Navbar.Collapse id="basic-navbar-nav">
-          <div className="d-flex w-100 justify-content-between flex-column flex-lg-row align-items-lg-center">
-            <div className="d-none d-lg-block w-50"></div>
-            <div className="d-flex flex-column flex-lg-row align-items-center justify-content-end w-100 w-lg-50">
-              <Nav className="mb-3 mb-lg-0 me-lg-4 text-center text-lg-start">
-                {/* Home */}
-                <Nav.Link as={NavLink} to="/" end className={({ isActive }) => (isActive ? "active " : "") + "d-flex align-items-center nav-link-custom"}>
-                  <BsHouse /> Home
+          <div className="d-flex flex-column flex-lg-row w-100 align-items-center justify-content-lg-end justify-content-center">
+            {/* Links */}
+            <Nav className="flex-column flex-lg-row align-items-center mb-3 mb-lg-0 me-lg-3 text-center text-lg-start">
+              <Nav.Link as={NavLink} to="/" end className="d-flex align-items-center nav-link-custom">
+                <BsHouse className="nav-icon me-1" /> Home
+              </Nav.Link>
+
+              {!isAuthenticated ? (
+                <Nav.Link as={NavLink} to="/login" className="d-flex align-items-center nav-link-custom">
+                  <BsBoxArrowInRight className="nav-icon me-1" /> Login
                 </Nav.Link>
+              ) : (
+                <Nav.Link as={NavLink} to="/profile" className="d-flex align-items-center nav-link-custom">
+                  <Image src={user?.profileImageUrl || "https://via.placeholder.com/30"} roundedCircle width="30" height="30" className="me-2" />
+                  {user?.username || "Profilo"}
+                </Nav.Link>
+              )}
+            </Nav>
 
-                {/* Login o Profilo */}
-                {!isAuthenticated ? (
-                  <Nav.Link as={NavLink} to="/login" className={({ isActive }) => (isActive ? "active " : "") + "d-flex align-items-center nav-link-custom"}>
-                    <BsBoxArrowInRight /> Login
-                  </Nav.Link>
-                ) : (
-                  <Nav.Link as={NavLink} to="/profile" className={({ isActive }) => (isActive ? "active " : "") + "d-flex align-items-center nav-link-custom"}>
-                    <Image src={user?.profileImageUrl || "https://via.placeholder.com/30"} roundedCircle width="30" height="30" className="me-2" />
-                    {user?.username || "Profilo"}
-                  </Nav.Link>
-                )}
-              </Nav>
-
-              <Navbar.Brand className="text-center">
-                <img src={logo} alt="Logo" height="50" className="d-inline-block align-top mb-2 mb-lg-0" />
-              </Navbar.Brand>
-            </div>
+            {/* Logo */}
+            <Navbar.Brand className="d-flex justify-content-center">
+              <img src={logo} alt="Logo" height="50" />
+            </Navbar.Brand>
           </div>
         </Navbar.Collapse>
       </Container>
