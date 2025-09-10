@@ -1,20 +1,48 @@
-.custom-footer .footer-link {
-  color: #f8f9fa;
-  text-decoration: none;
-  transition: color 0.3s ease;
+/* Footer generale */
+.custom-footer {
+  background: linear-gradient(200deg, #0d1b2a, #1b263b, #415a77, #778da9);
+  color: #f3f4f6;
+  font-family: "Audiowide", sans-serif;
 }
 
-.custom-footer .footer-link:hover {
-  color: #ffc107;
+/* Titoli */
+.footer-title {
+  font-weight: bold;
+  color: #f3f4f6;
 }
 
-.custom-footer .social-icon {
-  color: #f8f9fa;
+.footer-subtitle {
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+/* Testo normale */
+.footer-text {
+  color: #f3f4f6;
+  opacity: 0.9;
+}
+
+/* Link social */
+.social-icon {
+  color: #f3f4f6;
   font-size: 1.5rem;
-  transition: color 0.3s ease, transform 0.3s ease;
+  transition: color 0.3s ease, transform 0.3s ease, filter 0.3s ease;
 }
 
-.custom-footer .social-icon:hover {
+.social-icon:hover {
   color: #ffc107;
   transform: scale(1.2);
+  filter: drop-shadow(0 0 5px #ffc107);
+}
+
+/* Divider */
+.footer-divider {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Mobile adjustments */
+@media (max-width: 991px) {
+  .custom-footer .social-icon {
+    font-size: 1.4rem;
+  }
 }
