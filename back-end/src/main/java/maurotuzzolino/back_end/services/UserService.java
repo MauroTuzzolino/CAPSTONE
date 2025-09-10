@@ -10,6 +10,7 @@ import maurotuzzolino.back_end.enums.Role;
 import maurotuzzolino.back_end.exceptions.BadRequestException;
 import maurotuzzolino.back_end.exceptions.EmailAlreadyExistsException;
 import maurotuzzolino.back_end.exceptions.NotFoundException;
+import maurotuzzolino.back_end.repositories.ArticleCommentRepository;
 import maurotuzzolino.back_end.repositories.ArticleLikeRepository;
 import maurotuzzolino.back_end.repositories.PasswordResetTokenRepository;
 import maurotuzzolino.back_end.repositories.UserRepository;
@@ -33,13 +34,15 @@ public class UserService implements UserDetailsService {
     private final EmailService emailService;
     private final PasswordResetTokenRepository tokenRepository;
     private final ArticleLikeRepository articleLikeRepository;
+    private final ArticleCommentRepository articleCommentRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService, PasswordResetTokenRepository tokenRepository, ArticleLikeRepository articleLikeRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService, PasswordResetTokenRepository tokenRepository, ArticleLikeRepository articleLikeRepository, ArticleCommentRepository articleCommentRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.tokenRepository = tokenRepository;
         this.articleLikeRepository = articleLikeRepository;
+        this.articleCommentRepository = articleCommentRepository;
     }
 
     // Registrazione
@@ -210,16 +213,13 @@ public class UserService implements UserDetailsService {
                 .collect(Collectors.toList());
     }
 
-    // conversione entity → DTO
+    // conversione entity → DTO minimal
     private ArticleDTO mapToDTO(NewsArticle article, User currentUser) {
         ArticleDTO dto = new ArticleDTO();
-        dto.id = article.getId();
+        dto.id = article.getExternalId();
         dto.title = safe(article.getTitle());
         dto.url = safe(article.getUrl());
         dto.imageUrl = safe(article.getImageUrl());
-
-        dto.publishedAt = null;
-        dto.summary = "";
 
         dto.likesCount = articleLikeRepository.countByArticle(article);
         dto.userHasLiked = articleLikeRepository.existsByUserAndArticle(currentUser, article);

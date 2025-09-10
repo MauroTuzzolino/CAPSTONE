@@ -144,7 +144,7 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
       <Row className="justify-content-center">
         {/* Colonna sinistra: profilo */}
         <Col xs={12} lg={4} className="mb-4">
-          <Card className="p-3 shadow-sm" style={{ height: "28%" }}>
+          <Card className="p-3 shadow-sm" style={{ height: "500px" }}>
             <div className="d-flex justify-content-center m-3">
               <Image
                 src={user?.profileImageUrl || ""}
@@ -222,10 +222,35 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                     <Card.Body>
                       <Card.Title>{a.title}</Card.Title>
                       <Card.Img src={a.imageUrl} alt={a.title} style={{ maxHeight: "150px", objectFit: "cover" }} />
-                      <Card.Text>{a.summary?.slice(0, 150)}...</Card.Text>
-                      <Button variant="primary" onClick={() => window.open(a.url, "_blank")}>
-                        Leggi
-                      </Button>
+                      <Card.Text>
+                        Likes: {a.likesCount} | Commenti: {a.commentsCount}
+                      </Card.Text>
+                      <div className="d-flex gap-2">
+                        <Button variant="primary" onClick={() => window.open(a.url, "_blank")}>
+                          Leggi
+                        </Button>
+                        <Button
+                          variant="danger"
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`http://localhost:3001/api/articles/${a.id}/like`, {
+                                method: "DELETE",
+                                headers: {
+                                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+                                },
+                              });
+                              if (!res.ok) throw new Error("Errore nel rimuovere il like");
+
+                              setLikedArticles((prev) => prev.filter((article) => article.id !== a.id));
+                            } catch (err) {
+                              console.error(err);
+                              alert("Errore nel rimuovere il like");
+                            }
+                          }}
+                        >
+                          Rimuovi Like
+                        </Button>
+                      </div>
                     </Card.Body>
                   </Card>
                 ))}

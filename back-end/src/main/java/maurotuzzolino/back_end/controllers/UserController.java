@@ -83,7 +83,6 @@ public class UserController {
 
     // GET /api/users/me
     @GetMapping("/me")
-    @PreAuthorize("isAuthenticated()")
     public User getCurrentUser(@AuthenticationPrincipal User currentUser) {
         return currentUser;
     }
