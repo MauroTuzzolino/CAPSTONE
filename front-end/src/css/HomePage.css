@@ -1,16 +1,20 @@
+@import url("https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400..900&family=Press+Start+2P&family=Syncopate:wght@400;700&display=swap");
+
 .central-column {
-  background: linear-gradient(135deg, #27160f, #7c645f, #c3b29c);
+  background: radial-gradient(circle, rgba(242, 193, 133, 0.9) 28%, rgba(156, 59, 3, 0.62) 68%, rgba(5, 6, 38, 0.29) 84%);
   border-radius: 15px;
   padding: 30px;
   color: white;
   transition: background 0.3s ease-in-out;
+  box-shadow: rgba(255, 255, 255, 0.59) 0px 0px 35px;
 }
 
 .central-column h2 {
   font-weight: bold;
+  font-family: "Press Start 2P", cursive;
 }
 
-/* Card styling */
+/* CARD STYLING */
 .central-column .card {
   border-radius: 10px;
   overflow: hidden;
@@ -37,16 +41,41 @@
   text-decoration: underline;
 }
 
+.central-column .card {
+  background: linear-gradient(145deg, #0d1b2a, #1b263b, #415a77, #778da9);
+
+  color: white;
+  border: none;
+}
+
+/* FONT ASSIGNMENTS */
+.central-column .card-title {
+  font-family: "Audiowide", sans-serif;
+}
+
+.central-column .summary-text {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.9rem;
+}
+
+.central-column .date-text {
+  font-family: "Syncopate", sans-serif;
+  font-size: 0.8rem;
+  color: #bbb;
+}
+
+/* Hover per elementi cliccabili */
 .clickable:hover {
   transform: scale(1.02);
   transition: transform 0.2s ease-in-out;
 }
 
-/* Responsiveness */
+/* RESPONSIVE */
 @media (max-width: 991px) {
   .central-column {
     background: transparent; /* Sfondo trasparente sotto lg */
     padding: 15px;
+    box-shadow: none;
   }
 }
 
@@ -58,4 +87,59 @@
   .central-column .card img {
     height: 180px;
   }
+}
+
+/* COMMENTS MODAL */
+.comments-modal-light {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(220, 220, 220, 0.9) 100%);
+  color: #111827;
+  border-radius: 15px;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 0px 25px;
+}
+
+.comments-title {
+  font-family: "Audiowide", sans-serif;
+  font-size: 1.3rem;
+  color: #2b2d42;
+}
+
+.comments-count {
+  font-family: "Syncopate", sans-serif;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.comment-input-light {
+  background: #f0f0f0;
+  color: #111827;
+  border: 1px solid #ccc;
+}
+
+.comment-input-light:focus {
+  background: #e0e0e0;
+  border-color: #2b2d42;
+  box-shadow: 0 0 8px rgba(43, 45, 66, 0.3);
+}
+
+.publish-btn-light {
+  background: #2b2d42;
+  border: none;
+  font-weight: bold;
+  color: #fff;
+  transition: transform 0.2s ease-in-out;
+}
+
+.publish-btn-light:hover {
+  transform: scale(1.03);
+  background: #3a3d5c;
+}
+
+.comment-box-light {
+  background: rgba(43, 45, 66, 0.05);
+  border: 1px solid rgba(43, 45, 66, 0.2);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-family: "Orbitron", sans-serif;
+  color: #111827;
 }

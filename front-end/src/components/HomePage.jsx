@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Button, Container, Form, Modal } from "react-bootstrap";
+import { Card, Button, Container, Form, Modal, Spinner } from "react-bootstrap";
 import { BiLike } from "react-icons/bi";
 import { FaRegCommentDots } from "react-icons/fa";
 import "../css/HomePage.css";
@@ -14,7 +14,7 @@ const HomeMain = () => {
   const [commentInput, setCommentInput] = useState("");
 
   const itemsPerPage = 5;
-  const fallbackImage = "/images/image-not-found.png";
+  const fallbackImage = "../assets/notFoundImg.jpg";
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -142,7 +142,8 @@ const HomeMain = () => {
   if (loading)
     return (
       <div className="text-center my-5">
-        <h4 className="text-white">Caricamento articoli...</h4>
+        <Spinner animation="border" role="status" />
+        <h4 className="text-white">Loading articles...</h4>
       </div>
     );
 
@@ -151,7 +152,7 @@ const HomeMain = () => {
       <div className="col-1 d-none d-lg-block"></div>
 
       <div className="col-12 col-lg-8 central-column p-4">
-        <h2 className="text-center mb-4 text-white">Latest Space News</h2>
+        <h2 className="text-center mb-4 text-white">Latest News from Space</h2>
         <Container>
           {currentArticles.map((article) => (
             <Card
@@ -176,27 +177,28 @@ const HomeMain = () => {
                 </div>
                 <div className="col-12 col-md-8">
                   <Card.Body className="d-flex flex-column h-100">
-                    <Card.Title className="text-truncate" title={article.title}>
+                    <Card.Title className="card-title text-truncate" title={article.title}>
                       {article.title}
                     </Card.Title>
-                    <Card.Text className="text-muted" style={{ fontSize: "0.85rem" }}>
-                      {new Date(article.publishedAt).toLocaleDateString()}
-                    </Card.Text>
+
+                    <Card.Text className="date-text">{new Date(article.publishedAt).toLocaleDateString()}</Card.Text>
+
                     <Card.Text className="summary-text">{article.summary?.slice(0, 150)}...</Card.Text>
 
                     {token && (
-                      <div className="d-flex justify-content-between">
+                      <div className="d-flex align-items-center justify-content-end">
                         <Button
-                          variant={article.userHasLiked ? "danger" : "outline-primary"}
+                          variant={article.userHasLiked ? "danger" : "outline-dark"}
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleLike(article);
                           }}
+                          className="me-2"
                         >
                           <BiLike /> {article.likesCount || 0}
                         </Button>
                         <Button
-                          variant="outline-secondary"
+                          variant="outline-warning"
                           onClick={(e) => {
                             e.stopPropagation();
                             openCommentsModal(article);
@@ -213,29 +215,36 @@ const HomeMain = () => {
           ))}
 
           {/* Modal commenti */}
-          <Modal show={modalOpen} onHide={() => setModalOpen(false)}>
-            <Modal.Header closeButton>
-              <Modal.Title>Comments</Modal.Title>
+          <Modal show={modalOpen} onHide={() => setModalOpen(false)} centered contentClassName="comments-modal-light">
+            <Modal.Header closeButton className="border-0">
+              <Modal.Title className="comments-title">Comments</Modal.Title>
             </Modal.Header>
             <Modal.Body>
               {activeArticle && (
                 <>
-                  <p>Total comments: {activeArticle.commentsCount || 0}</p>
-                  <Form.Control type="text" placeholder="Type a comment..." value={commentInput} onChange={(e) => setCommentInput(e.target.value)} />
-                  <Button className="mt-2 mb-3" onClick={submitComment}>
+                  <p className="comments-count">Total comments: {activeArticle.commentsCount || 0}</p>
+
+                  <Form.Control
+                    type="text"
+                    placeholder="Type a comment..."
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    className="mb-2 comment-input-light"
+                  />
+                  <Button className="publish-btn-light w-100" onClick={submitComment}>
                     Publish
                   </Button>
 
                   {activeArticle.comments && activeArticle.comments.length > 0 ? (
-                    <div className="comments-list">
+                    <div className="comments-list mt-3">
                       {activeArticle.comments.map((c) => (
-                        <div key={c.id} className="mb-2 p-2 border rounded">
+                        <div key={c.id} className="comment-box-light">
                           <strong>{c.authorUsername}</strong>: {c.content}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-muted">No comments present</p>
+                    <p className="text-muted mt-3">No comments present</p>
                   )}
                 </>
               )}
