@@ -14,7 +14,7 @@ const HomeMain = () => {
   const [commentInput, setCommentInput] = useState("");
 
   const itemsPerPage = 5;
-  const fallbackImage = "/images/image-not-found.png"; // immagine default nella cartella public/images
+  const fallbackImage = "/images/image-not-found.png";
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -151,7 +151,7 @@ const HomeMain = () => {
       <div className="col-1 d-none d-lg-block"></div>
 
       <div className="col-12 col-lg-8 central-column p-4">
-        <h2 className="text-center mb-4 text-white">Ultime Notizie Spaziali</h2>
+        <h2 className="text-center mb-4 text-white">Latest Space News</h2>
         <Container>
           {currentArticles.map((article) => (
             <Card
@@ -215,15 +215,15 @@ const HomeMain = () => {
           {/* Modal commenti */}
           <Modal show={modalOpen} onHide={() => setModalOpen(false)}>
             <Modal.Header closeButton>
-              <Modal.Title>Commenti</Modal.Title>
+              <Modal.Title>Comments</Modal.Title>
             </Modal.Header>
             <Modal.Body>
               {activeArticle && (
                 <>
-                  <p>Totale commenti: {activeArticle.commentsCount || 0}</p>
-                  <Form.Control type="text" placeholder="Scrivi un commento..." value={commentInput} onChange={(e) => setCommentInput(e.target.value)} />
+                  <p>Total comments: {activeArticle.commentsCount || 0}</p>
+                  <Form.Control type="text" placeholder="Type a comment..." value={commentInput} onChange={(e) => setCommentInput(e.target.value)} />
                   <Button className="mt-2 mb-3" onClick={submitComment}>
-                    Invia
+                    Publish
                   </Button>
 
                   {activeArticle.comments && activeArticle.comments.length > 0 ? (
@@ -235,7 +235,7 @@ const HomeMain = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-muted">Nessun commento presente</p>
+                    <p className="text-muted">No comments present</p>
                   )}
                 </>
               )}

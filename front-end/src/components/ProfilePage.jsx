@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Container, Row, Col, Card, Form, Button, Image } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import Pagination from "react-bootstrap/Pagination";
+import { FaHeartBroken } from "react-icons/fa";
 
 const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
   const navigate = useNavigate();
@@ -159,10 +160,10 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
             {!editing ? (
               <div className="text-dark">
                 <p>
-                  <strong>Nome:</strong> {user?.firstName}
+                  <strong>Name:</strong> {user?.firstName}
                 </p>
                 <p>
-                  <strong>Cognome:</strong> {user?.lastName}
+                  <strong>Surname:</strong> {user?.lastName}
                 </p>
                 <p>
                   <strong>Email:</strong> {user?.email}
@@ -171,10 +172,10 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                   <strong>Username:</strong> {user?.username}
                 </p>
                 <p>
-                  <strong>Ruolo:</strong> {user?.role}
+                  <strong>Role:</strong> {user?.role}
                 </p>
                 <Button variant="warning" className="w-100 mb-2" onClick={() => setEditing(true)}>
-                  Modifica
+                  Edit
                 </Button>
                 <Button variant="danger" className="w-100" onClick={handleLogout}>
                   Logout
@@ -183,12 +184,12 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
             ) : (
               <Form onSubmit={handleSave}>
                 <Form.Group className="mb-3" controlId="formFirstName">
-                  <Form.Label>Nome</Form.Label>
+                  <Form.Label>Name</Form.Label>
                   <Form.Control type="text" name="firstName" value={formData.firstName} onChange={handleChange} required />
                 </Form.Group>
 
                 <Form.Group className="mb-3" controlId="formLastName">
-                  <Form.Label>Cognome</Form.Label>
+                  <Form.Label>Surname</Form.Label>
                   <Form.Control type="text" name="lastName" value={formData.lastName} onChange={handleChange} required />
                 </Form.Group>
 
@@ -198,10 +199,10 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                 </Form.Group>
 
                 <Button variant="primary" type="submit" className="w-100 mb-2">
-                  Salva
+                  Save
                 </Button>
                 <Button variant="secondary" className="w-100" onClick={() => setEditing(false)}>
-                  Annulla
+                  Cancel
                 </Button>
               </Form>
             )}
@@ -223,11 +224,11 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                       <Card.Title>{a.title}</Card.Title>
                       <Card.Img src={a.imageUrl} alt={a.title} style={{ maxHeight: "150px", objectFit: "cover" }} />
                       <Card.Text>
-                        Likes: {a.likesCount} | Commenti: {a.commentsCount}
+                        Likes: {a.likesCount} | Comments: {a.commentsCount}
                       </Card.Text>
                       <div className="d-flex gap-2">
                         <Button variant="primary" onClick={() => window.open(a.url, "_blank")}>
-                          Leggi
+                          Read
                         </Button>
                         <Button
                           variant="danger"
@@ -248,7 +249,7 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                             }
                           }}
                         >
-                          Rimuovi Like
+                          <FaHeartBroken /> Unlike
                         </Button>
                       </div>
                     </Card.Body>
@@ -276,24 +277,24 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
         <div className="modal show d-block" tabIndex="-1" role="dialog">
           <div className="modal-dialog" role="document">
             <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Cambia immagine profilo</h5>
+              <div className="modal-header d-flex justify-content-between align-items-center">
+                <h5 className="modal-title">Change profile picture</h5>
                 <button type="button" className="close" onClick={() => setShowModal(false)}>
                   <span>&times;</span>
                 </button>
               </div>
               <div className="modal-body">
                 <Form.Group>
-                  <Form.Label>Seleziona nuova immagine</Form.Label>
+                  <Form.Label>Select an image</Form.Label>
                   <Form.Control type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files[0])} />
                 </Form.Group>
               </div>
               <div className="modal-footer">
                 <Button variant="secondary" onClick={() => setShowModal(false)}>
-                  Annulla
+                  Cancel
                 </Button>
                 <Button variant="primary" onClick={handleUploadImage} disabled={!selectedFile}>
-                  Carica
+                  Upload
                 </Button>
               </div>
             </div>
