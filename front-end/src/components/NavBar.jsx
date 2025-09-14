@@ -5,6 +5,7 @@ import { BsHouse, BsBoxArrowInRight } from "react-icons/bs";
 import logo from "../assets/LOGO-CAPSTONE.png";
 import "../css/NavBar.css";
 import { GiRocketThruster } from "react-icons/gi";
+import { FaSatellite } from "react-icons/fa";
 
 const AppNavbar = ({ isAuthenticated, user, setIsAuthenticated }) => {
   const handleLogout = () => {
@@ -32,9 +33,13 @@ const AppNavbar = ({ isAuthenticated, user, setIsAuthenticated }) => {
               ) : (
                 <Nav.Link as={NavLink} to="/profile" className="d-flex align-items-center nav-link-custom">
                   <Image src={user?.profileImageUrl || "https://via.placeholder.com/30"} roundedCircle width="30" height="30" className="me-2" />
-                  {user?.username || "Profilo"}
+                  {user?.username || "Profile"}
                 </Nav.Link>
               )}
+
+              <Nav.Link href="https://stellarium-web.org/" target="_blank" rel="noopener noreferrer" className="d-flex align-items-center nav-link-custom">
+                <FaSatellite className="nav-icon me-1" /> Planetary
+              </Nav.Link>
             </Nav>
 
             {/* Logo */}
