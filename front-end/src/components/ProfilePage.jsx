@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Container, Row, Col, Card, Form, Button, Image, Spinner } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { FaHeartBroken } from "react-icons/fa";
+import { FaComment, FaCommentAlt, FaCommentDots, FaHeartBroken, FaRegComment } from "react-icons/fa";
 import "../css/ProfilePage.css";
 
 const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
@@ -21,12 +21,14 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
   const [likedArticles, setLikedArticles] = useState([]);
   const [loadingLikes, setLoadingLikes] = useState(true);
   const itemsPerPage = 4;
-  const [commentsModal, setCommentsModal] = useState({ open: false, article: null });
+
+  // Modal per commenti
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [activeArticle, setActiveArticle] = useState(null);
   const [comments, setComments] = useState([]);
-  const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState("");
 
-  // Fetch utente loggato con gestione token scaduto
+  // Fetch utente loggato
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
@@ -60,24 +62,44 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
     fetchUser();
   }, []);
 
-  // Fetch articoli piaciuti
+  // Fetch articoli liked con conteggio commenti
   useEffect(() => {
     const fetchLiked = async () => {
       if (!user) return;
       setLoadingLikes(true);
+      const token = localStorage.getItem("token");
+
       try {
-        const res = await fetch("http://localhost:3001/api/users/me/liked-articles", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
+        const res = await fetch("http://localhost:3001/api/users/me/liked-articles", { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error("Errore fetch articoli piaciuti");
         const data = await res.json();
-        setLikedArticles(data);
+
+        // arricchisco con conteggio commenti
+        const withCounts = await Promise.all(
+          data.map(async (a) => {
+            try {
+              const r = await fetch(`http://localhost:3001/api/articles/${a.id}/comments`, { headers: { Authorization: `Bearer ${token}` } });
+              if (!r.ok) return { ...a, commentsCount: 0 };
+              const comm = await r.json();
+              return {
+                ...a,
+                commentsCount: Array.isArray(comm) ? comm.length : 0,
+              };
+            } catch (err) {
+              console.error("Errore conteggio commenti per", a.id, err);
+              return { ...a, commentsCount: 0 };
+            }
+          })
+        );
+
+        setLikedArticles(withCounts);
       } catch (err) {
         console.error(err);
       } finally {
         setLoadingLikes(false);
       }
     };
+
     fetchLiked();
   }, [user]);
 
@@ -140,49 +162,27 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
     }
   };
 
-  const fetchComments = async (articleId) => {
-    if (loadingComments[articleId]) return; // evita doppio fetch
-    setLoadingComments((prev) => ({ ...prev, [articleId]: true }));
-
-    try {
-      const res = await fetch(`http://localhost:3001/api/articles/${articleId}/comments`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (!res.ok) throw new Error("Errore fetch commenti");
-      const data = await res.json();
-
-      setComments((prev) => ({ ...prev, [articleId]: data }));
-      setOpenComments((prev) => ({ ...prev, [articleId]: true }));
-    } catch (err) {
-      console.error(err);
-      alert("Errore caricamento commenti");
-    } finally {
-      setLoadingComments((prev) => ({ ...prev, [articleId]: false }));
-    }
-  };
-
-  const openCommentsModal = async (article) => {
-    setCommentsModal({ open: true, article });
-    setLoadingComments(true);
+  // Apri modale commenti
+  const handleShowComments = async (article) => {
+    setActiveArticle(article);
+    setShowCommentsModal(true);
     try {
       const res = await fetch(`http://localhost:3001/api/articles/${article.id}/comments`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      if (!res.ok) throw new Error("Errore fetch commenti");
+      if (!res.ok) throw new Error();
       const data = await res.json();
       setComments(data);
-    } catch (err) {
-      console.error(err);
-      alert("Errore caricamento commenti");
-    } finally {
-      setLoadingComments(false);
+    } catch {
+      setComments([]);
     }
   };
 
+  // Aggiungi commento
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/articles/${commentsModal.article.id}/comments`, {
+      const res = await fetch(`http://localhost:3001/api/articles/${activeArticle.id}/comments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -190,13 +190,14 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
         },
         body: JSON.stringify({ content: newComment }),
       });
-      if (!res.ok) throw new Error("Errore aggiunta commento");
-      const added = await res.json();
-      setComments((prev) => [added, ...prev]); // aggiorna lista
+      if (!res.ok) throw new Error();
+      const saved = await res.json();
+      setComments((prev) => [saved, ...prev]);
       setNewComment("");
-    } catch (err) {
-      console.error(err);
-      alert("Errore aggiunta commento");
+      // aggiorno conteggio nell’array principale
+      setLikedArticles((prev) => prev.map((a) => (a.id === activeArticle.id ? { ...a, commentsCount: a.commentsCount + 1 } : a)));
+    } catch {
+      alert("Errore nel salvataggio del commento");
     }
   };
 
@@ -278,7 +279,9 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                               try {
                                 const res = await fetch(`http://localhost:3001/api/articles/${a.id}/like`, {
                                   method: "DELETE",
-                                  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                                  headers: {
+                                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                                  },
                                 });
                                 if (!res.ok) throw new Error();
                                 setLikedArticles((prev) => prev.filter((article) => article.id !== a.id));
@@ -289,10 +292,8 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                           >
                             <FaHeartBroken /> Unlike
                           </Button>
-
-                          {/* Lista commenti */}
-                          <Button variant="info" onClick={() => openCommentsModal(a)}>
-                            Show comments
+                          <Button variant="outline-warning" onClick={() => handleShowComments(a)}>
+                            <FaCommentDots />
                           </Button>
                         </div>
                       </Card.Body>
@@ -301,7 +302,7 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                 ))}
               </Row>
 
-              {/* Pagination personalizzata */}
+              {/* Pagination */}
               <div className="d-flex justify-content-center mt-4 gap-2">
                 <Button variant="dark" onClick={() => setCurrentPage((prev) => prev - 1)} disabled={currentPage === 1}>
                   Prev
@@ -349,45 +350,39 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
       )}
 
       {/* Modal commenti */}
-      {commentsModal.open && (
-        <div className="modal show d-block" tabIndex="-1">
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Comments for: {commentsModal.article.title}</h5>
-                <button type="button" className="btn-close" onClick={() => setCommentsModal({ open: false, article: null })}></button>
+      {showCommentsModal && activeArticle && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content bg-dark text-light shadow-lg rounded-4">
+              <div className="modal-header border-0">
+                <h5 className="modal-title fw-bold text-warning">{activeArticle.title}</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowCommentsModal(false)}></button>
               </div>
-
               <div className="modal-body">
-                {loadingComments ? (
-                  <div className="text-center">
-                    <Spinner animation="border" />
-                  </div>
-                ) : comments.length > 0 ? (
-                  <ul className="list-unstyled">
-                    {comments.map((c) => (
-                      <li key={c.id} className="border-bottom mb-2 pb-2">
-                        <strong>{c.authorUsername}:</strong> {c.content}
-                        <br />
-                        <small className="text-muted">{new Date(c.createdAt).toLocaleString()}</small>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={newComment}
+                    placeholder="Write a comment..."
+                    className="bg-clear text-light border-0 rounded-3"
+                    onChange={(e) => setNewComment(e.target.value)}
+                  />
+                </Form.Group>
+                <Button variant="warning" className="mb-3 w-100 fw-bold rounded-3 shadow-sm" onClick={handleAddComment}>
+                  Add Comment
+                </Button>
+                <ul className="list-group list-group-flush">
+                  {comments.length === 0 ? (
+                    <li className="list-group-item bg-dark text-white border-0">No comments yet.</li>
+                  ) : (
+                    comments.map((c) => (
+                      <li key={c.id} className="list-group-item bg-dark text-light border-secondary">
+                        <strong className="text-warning">{c.authorUsername}</strong>: {c.content}
                       </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted">No comments yet.</p>
-                )}
-              </div>
-
-              <div className="modal-footer d-flex flex-column align-items-stretch">
-                <Form.Control as="textarea" rows={2} placeholder="Write a comment..." value={newComment} onChange={(e) => setNewComment(e.target.value)} />
-                <div className="d-flex gap-2 mt-2">
-                  <Button variant="secondary" onClick={() => setCommentsModal({ open: false, article: null })}>
-                    Close
-                  </Button>
-                  <Button variant="primary" onClick={handleAddComment} disabled={!newComment.trim()}>
-                    Add Comment
-                  </Button>
-                </div>
+                    ))
+                  )}
+                </ul>
               </div>
             </div>
           </div>
