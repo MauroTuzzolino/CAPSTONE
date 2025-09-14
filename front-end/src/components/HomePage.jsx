@@ -92,7 +92,9 @@ const HomeMain = () => {
 
     if (token) {
       try {
-        const res = await fetch(`http://localhost:3001/api/articles/${article.id}/comments`, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(`http://localhost:3001/api/articles/${article.id}/comments`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const data = await res.json();
         setActiveArticle((prev) => ({ ...prev, comments: data }));
       } catch (err) {
@@ -214,37 +216,36 @@ const HomeMain = () => {
             </Card>
           ))}
 
-          {/* Modal commenti */}
-          <Modal show={modalOpen} onHide={() => setModalOpen(false)} centered contentClassName="comments-modal-light">
+          {/* Modal commenti (dark style come in ProfilePage) */}
+          <Modal show={modalOpen} onHide={() => setModalOpen(false)} centered contentClassName="bg-dark text-light shadow-lg rounded-4">
             <Modal.Header closeButton className="border-0">
-              <Modal.Title className="comments-title">Comments</Modal.Title>
+              <Modal.Title className="fw-bold text-warning">Comments</Modal.Title>
             </Modal.Header>
             <Modal.Body>
               {activeArticle && (
                 <>
-                  <p className="comments-count">Total comments: {activeArticle.commentsCount || 0}</p>
-
                   <Form.Control
-                    type="text"
-                    placeholder="Type a comment..."
+                    as="textarea"
+                    rows={2}
+                    placeholder="Write a comment..."
                     value={commentInput}
                     onChange={(e) => setCommentInput(e.target.value)}
-                    className="mb-2 comment-input-light"
+                    className="bg-light text-dark border-0 rounded-3 mb-2"
                   />
-                  <Button className="publish-btn-light w-100" onClick={submitComment}>
-                    Publish
+                  <Button className="w-100 fw-bold rounded-3 shadow-sm mb-3" variant="warning" onClick={submitComment}>
+                    Add Comment
                   </Button>
 
                   {activeArticle.comments && activeArticle.comments.length > 0 ? (
-                    <div className="comments-list mt-3">
+                    <div className="comments-list">
                       {activeArticle.comments.map((c) => (
-                        <div key={c.id} className="comment-box-light">
-                          <strong>{c.authorUsername}</strong>: {c.content}
+                        <div key={c.id} className="border-bottom pb-2 mb-2">
+                          <strong className="text-warning">{c.authorUsername}</strong>: {c.content}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-muted mt-3">No comments present</p>
+                    <p className="text-light mt-3">No comments yet.</p>
                   )}
                 </>
               )}
