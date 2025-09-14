@@ -21,6 +21,10 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
   const [likedArticles, setLikedArticles] = useState([]);
   const [loadingLikes, setLoadingLikes] = useState(true);
   const itemsPerPage = 4;
+  const [commentsModal, setCommentsModal] = useState({ open: false, article: null });
+  const [comments, setComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
 
   // Fetch utente loggato con gestione token scaduto
   useEffect(() => {
@@ -136,6 +140,66 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
     }
   };
 
+  const fetchComments = async (articleId) => {
+    if (loadingComments[articleId]) return; // evita doppio fetch
+    setLoadingComments((prev) => ({ ...prev, [articleId]: true }));
+
+    try {
+      const res = await fetch(`http://localhost:3001/api/articles/${articleId}/comments`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (!res.ok) throw new Error("Errore fetch commenti");
+      const data = await res.json();
+
+      setComments((prev) => ({ ...prev, [articleId]: data }));
+      setOpenComments((prev) => ({ ...prev, [articleId]: true }));
+    } catch (err) {
+      console.error(err);
+      alert("Errore caricamento commenti");
+    } finally {
+      setLoadingComments((prev) => ({ ...prev, [articleId]: false }));
+    }
+  };
+
+  const openCommentsModal = async (article) => {
+    setCommentsModal({ open: true, article });
+    setLoadingComments(true);
+    try {
+      const res = await fetch(`http://localhost:3001/api/articles/${article.id}/comments`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (!res.ok) throw new Error("Errore fetch commenti");
+      const data = await res.json();
+      setComments(data);
+    } catch (err) {
+      console.error(err);
+      alert("Errore caricamento commenti");
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+    try {
+      const res = await fetch(`http://localhost:3001/api/articles/${commentsModal.article.id}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ content: newComment }),
+      });
+      if (!res.ok) throw new Error("Errore aggiunta commento");
+      const added = await res.json();
+      setComments((prev) => [added, ...prev]); // aggiorna lista
+      setNewComment("");
+    } catch (err) {
+      console.error(err);
+      alert("Errore aggiunta commento");
+    }
+  };
+
   const totalPages = Math.ceil(likedArticles.length / itemsPerPage);
 
   return (
@@ -225,6 +289,11 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                           >
                             <FaHeartBroken /> Unlike
                           </Button>
+
+                          {/* Lista commenti */}
+                          <Button variant="info" onClick={() => openCommentsModal(a)}>
+                            Show comments
+                          </Button>
                         </div>
                       </Card.Body>
                     </Card>
@@ -273,6 +342,52 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                 <Button variant="primary" onClick={handleUploadImage} disabled={!selectedFile}>
                   Upload
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal commenti */}
+      {commentsModal.open && (
+        <div className="modal show d-block" tabIndex="-1">
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Comments for: {commentsModal.article.title}</h5>
+                <button type="button" className="btn-close" onClick={() => setCommentsModal({ open: false, article: null })}></button>
+              </div>
+
+              <div className="modal-body">
+                {loadingComments ? (
+                  <div className="text-center">
+                    <Spinner animation="border" />
+                  </div>
+                ) : comments.length > 0 ? (
+                  <ul className="list-unstyled">
+                    {comments.map((c) => (
+                      <li key={c.id} className="border-bottom mb-2 pb-2">
+                        <strong>{c.authorUsername}:</strong> {c.content}
+                        <br />
+                        <small className="text-muted">{new Date(c.createdAt).toLocaleString()}</small>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted">No comments yet.</p>
+                )}
+              </div>
+
+              <div className="modal-footer d-flex flex-column align-items-stretch">
+                <Form.Control as="textarea" rows={2} placeholder="Write a comment..." value={newComment} onChange={(e) => setNewComment(e.target.value)} />
+                <div className="d-flex gap-2 mt-2">
+                  <Button variant="secondary" onClick={() => setCommentsModal({ open: false, article: null })}>
+                    Close
+                  </Button>
+                  <Button variant="primary" onClick={handleAddComment} disabled={!newComment.trim()}>
+                    Add Comment
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
