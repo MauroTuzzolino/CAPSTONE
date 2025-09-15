@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Container, Row, Col, Card, Form, Button, Image, Spinner } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { FaComment, FaCommentAlt, FaCommentDots, FaHeartBroken, FaRegComment } from "react-icons/fa";
+import { FaCommentDots, FaHeartBroken } from "react-icons/fa";
 import "../css/ProfilePage.css";
 
 const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
@@ -28,12 +28,12 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
 
+  const token = localStorage.getItem("token");
+
   // Fetch utente loggato
   useEffect(() => {
     const fetchUser = async () => {
-      const token = localStorage.getItem("token");
       if (!token) return;
-
       try {
         const res = await fetch("http://localhost:3001/api/users/me", {
           headers: { Authorization: `Bearer ${token}` },
@@ -58,7 +58,6 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
         navigate("/login");
       }
     };
-
     fetchUser();
   }, []);
 
@@ -67,10 +66,10 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
     const fetchLiked = async () => {
       if (!user) return;
       setLoadingLikes(true);
-      const token = localStorage.getItem("token");
-
       try {
-        const res = await fetch("http://localhost:3001/api/users/me/liked-articles", { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch("http://localhost:3001/api/users/me/liked-articles", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!res.ok) throw new Error("Errore fetch articoli piaciuti");
         const data = await res.json();
 
@@ -78,9 +77,10 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
         const withCounts = await Promise.all(
           data.map(async (a) => {
             try {
-              const r = await fetch(`http://localhost:3001/api/articles/${a.id}/comments`, { headers: { Authorization: `Bearer ${token}` } });
-              if (!r.ok) return { ...a, commentsCount: 0 };
-              const comm = await r.json();
+              const r = await fetch(`http://localhost:3001/api/articles/${a.id}/comments`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              const comm = (await r.ok) ? await r.json() : [];
               return {
                 ...a,
                 commentsCount: Array.isArray(comm) ? comm.length : 0,
@@ -115,7 +115,7 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           firstName: formData.firstName,
@@ -145,10 +145,9 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
     try {
       const formDataImg = new FormData();
       formDataImg.append("file", selectedFile);
-
       const res = await fetch(`http://localhost:3001/api/users/${user.id}/profile-picture`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: formDataImg,
       });
       if (!res.ok) throw new Error("Errore upload immagine");
@@ -168,7 +167,7 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
     setShowCommentsModal(true);
     try {
       const res = await fetch(`http://localhost:3001/api/articles/${article.id}/comments`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
@@ -186,7 +185,7 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ content: newComment }),
       });
@@ -194,10 +193,29 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
       const saved = await res.json();
       setComments((prev) => [saved, ...prev]);
       setNewComment("");
-      // aggiorno conteggio nell’array principale
+
       setLikedArticles((prev) => prev.map((a) => (a.id === activeArticle.id ? { ...a, commentsCount: a.commentsCount + 1 } : a)));
     } catch {
       alert("Errore nel salvataggio del commento");
+    }
+  };
+
+  // Elimina commento
+  const handleDeleteComment = async (commentId) => {
+    if (!token || !activeArticle) return;
+    try {
+      const res = await fetch(`http://localhost:3001/api/articles/${activeArticle.id}/comments/${commentId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Errore eliminazione commento");
+
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+
+      setLikedArticles((prev) => prev.map((a) => (a.id === activeArticle.id ? { ...a, commentsCount: a.commentsCount - 1 } : a)));
+    } catch (err) {
+      console.error(err);
+      alert("Errore eliminazione commento");
     }
   };
 
@@ -279,9 +297,7 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                               try {
                                 const res = await fetch(`http://localhost:3001/api/articles/${a.id}/like`, {
                                   method: "DELETE",
-                                  headers: {
-                                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                                  },
+                                  headers: { Authorization: `Bearer ${token}` },
                                 });
                                 if (!res.ok) throw new Error();
                                 setLikedArticles((prev) => prev.filter((article) => article.id !== a.id));
@@ -365,7 +381,7 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                     rows={3}
                     value={newComment}
                     placeholder="Write a comment..."
-                    className="bg-clear text-light border-0 rounded-3"
+                    className="bg-clear text-black border-0 rounded-3"
                     onChange={(e) => setNewComment(e.target.value)}
                   />
                 </Form.Group>
@@ -377,8 +393,15 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                     <li className="list-group-item bg-dark text-white border-0">No comments yet.</li>
                   ) : (
                     comments.map((c) => (
-                      <li key={c.id} className="list-group-item bg-dark text-light border-secondary">
-                        <strong className="text-warning">{c.authorUsername}</strong>: {c.content}
+                      <li key={c.id} className="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center">
+                        <span>
+                          <strong className="text-warning">{c.authorUsername}</strong>: {c.content}
+                        </span>
+                        {c.canDelete && (
+                          <Button variant="outline-danger" size="sm" onClick={() => handleDeleteComment(c.id)}>
+                            Delete
+                          </Button>
+                        )}
                       </li>
                     ))
                   )}
