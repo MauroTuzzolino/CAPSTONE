@@ -1,60 +1,41 @@
 import React, { useState } from "react";
-import { Form, Button, Card, Alert } from "react-bootstrap";
+import { Form, Button, Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { loginUser } from "../redux/actions/authActions";
 
-const LoginPage = ({ setIsAuthenticated, setUser }) => {
+const LoginPage = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ ...toast, show: false }), 3000);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-
     try {
-      const res = await fetch("http://localhost:3001/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || "Errore durante il login");
-      }
-
-      const data = await res.json();
-      const token = data.token;
-
-      // Salvo il token nel localStorage
-      localStorage.setItem("token", token);
-
-      // Decodifico il JWT per ottenere informazioni utente
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      setUser({ email: payload.sub, id: payload.id });
-
-      // Stato autenticato
-      setIsAuthenticated(true);
-
-      // Reindirizzo al profilo
+      await dispatch(loginUser(email, password));
+      showToast("Login effettuato con successo!", "success");
       navigate("/profile");
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Errore durante il login", "error");
     }
   };
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100">
       <Card className="p-4 shadow-lg" style={{ width: "100%", maxWidth: "400px" }}>
-        {/* Pulsante indietro */}
         <Button variant="outline-secondary" className="mb-3 d-flex justify-content-center align-items-center gap-1 w-25" onClick={() => navigate("/")}>
           Indietro
         </Button>
 
         <h3 className="text-center mb-4">Login</h3>
-
-        {error && <Alert variant="danger">{error}</Alert>}
 
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="formEmail">
@@ -83,6 +64,14 @@ const LoginPage = ({ setIsAuthenticated, setUser }) => {
           </div>
         </Form>
       </Card>
+
+      {toast.show && (
+        <div aria-live="polite" aria-atomic="true" style={{ position: "fixed", top: 20, right: 20, zIndex: 1050 }}>
+          <div className={`toast show text-white ${toast.type === "success" ? "bg-success" : toast.type === "error" ? "bg-danger" : "bg-warning"}`}>
+            <div className="toast-body">{toast.message}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

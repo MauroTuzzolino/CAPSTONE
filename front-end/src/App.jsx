@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
+
+// Import dei componenti principali
 import HomePage from "./components/HomePage";
 import LoginPage from "./components/LoginPage";
 import RegisterPage from "./components/RegisterPage";
@@ -12,50 +14,29 @@ import ForgotPasswordPage from "./components/ForgotPasswordPage";
 import ResetPasswordPage from "./components/ResetPasswordPage";
 import AdminUsers from "./components/AdminUsers";
 
+// Import Redux
+import { useDispatch, useSelector } from "react-redux";
+import { loadUser } from "./redux/actions/authActions";
+
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [userLoaded, setUserLoaded] = useState(false);
+  // Prendiamo i dati dallo store Redux invece che usare useState locale
+  const dispatch = useDispatch();
+  const { isAuthenticated, user, userLoaded } = useSelector((state) => state.auth);
 
+  // Effetto che carica l'utente all'avvio
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setIsAuthenticated(false);
-      setUser(null);
-      setUserLoaded(true);
-      return;
-    }
+    dispatch(loadUser()); // <-- questa action gestirà il fetch a /me
+  }, [dispatch]);
 
-    const fetchUser = async () => {
-      try {
-        const res = await fetch("http://localhost:3001/api/users/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Token non valido o scaduto");
-        const data = await res.json();
-        setUser(data);
-        setIsAuthenticated(true);
-      } catch (err) {
-        console.error(err);
-        localStorage.removeItem("token");
-        setUser(null);
-        setIsAuthenticated(false);
-      } finally {
-        setUserLoaded(true);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
+  // Se i dati dell'utente non sono ancora caricati mostriamo un loading
   if (!userLoaded) {
     return <div className="text-center mt-5 text-white">Loading...</div>;
   }
 
   // Wrapper per proteggere le route admin
   const AdminRoute = ({ children }) => {
-    if (!isAuthenticated) return <Navigate to="/login" />;
-    if (user?.role !== "ADMIN") return <Navigate to="/" />;
+    if (!isAuthenticated) return <Navigate to="/login" />; // se non loggato → login
+    if (user?.role !== "ADMIN") return <Navigate to="/" />; // se non admin → home
     return children;
   };
 
@@ -63,9 +44,9 @@ function App() {
     <Router>
       <Routes>
         {/* Route principali con MainLayout */}
-        <Route element={<MainLayout isAuthenticated={isAuthenticated} user={user} setIsAuthenticated={setIsAuthenticated} />}>
+        <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
-          <Route path="/profile" element={<ProfilePage user={user} setUser={setUser} setIsAuthenticated={setIsAuthenticated} />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route
             path="/admin/users"
             element={
@@ -78,8 +59,8 @@ function App() {
 
         {/* Route di autenticazione con AuthLayout */}
         <Route element={<AuthLayout />}>
-          <Route path="/login" element={<LoginPage setIsAuthenticated={setIsAuthenticated} setUser={setUser} />} />
-          <Route path="/register" element={<RegisterPage setIsAuthenticated={setIsAuthenticated} setUser={setUser} />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Route>

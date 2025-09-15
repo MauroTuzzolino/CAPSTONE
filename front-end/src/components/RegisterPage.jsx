@@ -1,9 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import { Form, Button, Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { registerUser } from "../redux/actions/authActions";
 
-const RegisterPage = ({ setIsAuthenticated, setUser }) => {
+const RegisterPage = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ ...toast, show: false }), 3000);
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -18,27 +28,11 @@ const RegisterPage = ({ setIsAuthenticated, setUser }) => {
     };
 
     try {
-      const res = await fetch("http://localhost:3001/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (res.status === 409) {
-        // Email già registrata
-        alert("⚠️ L'email inserita è già registrata!");
-        return;
-      }
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || "Errore nella registrazione");
-      }
-
-      alert("✅ Registrazione completata!");
+      await dispatch(registerUser(body));
+      showToast("✅ Registrazione completata!", "success");
       navigate("/login");
     } catch (err) {
-      alert("❌ " + err.message);
+      showToast(err.message || "Errore durante la registrazione", "error");
     }
   };
 
@@ -88,6 +82,15 @@ const RegisterPage = ({ setIsAuthenticated, setUser }) => {
           </div>
         </Form>
       </Card>
+
+      {/* Toast notifiche */}
+      {toast.show && (
+        <div aria-live="polite" aria-atomic="true" style={{ position: "fixed", top: 20, right: 20, zIndex: 1050 }}>
+          <div className={`toast show text-white ${toast.type === "success" ? "bg-success" : toast.type === "error" ? "bg-danger" : "bg-warning"}`}>
+            <div className="toast-body">{toast.message}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

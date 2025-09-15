@@ -1,35 +1,22 @@
 import React, { useState } from "react";
-import { Container, Form, Button, Alert, Card } from "react-bootstrap";
+import { Container, Form, Button, Card, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { forgotPassword } from "../redux/actions/authActions";
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  // Stato globale Redux
+  const { loading, error, forgotPasswordMessage } = useSelector((state) => state.auth);
+
+  // Stato locale solo per input
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setMessage(null);
-    setError(null);
-    setLoading(true);
-
-    try {
-      const res = await fetch(`http://localhost:3001/api/auth/forgot-password?email=${encodeURIComponent(email)}&appUrl=http://localhost:5173`, {
-        method: "POST",
-      });
-
-      if (!res.ok) {
-        throw new Error("Errore durante la richiesta");
-      }
-
-      setMessage("Se l'email è registrata, riceverai un link per il reset della password.");
-    } catch (err) {
-      setError("Qualcosa è andato storto. Riprova più tardi.");
-    } finally {
-      setLoading(false);
-    }
+    dispatch(forgotPassword(email));
   };
 
   return (
@@ -46,11 +33,22 @@ const ForgotPasswordPage = () => {
             <Form.Group className="mb-3">
               <Form.Control type="email" placeholder="Inserisci la tua email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </Form.Group>
-            <Button type="submit" variant="primary" className="w-100">
-              Invia link di reset
+            <Button type="submit" variant="primary" className="w-100" disabled={loading}>
+              {loading ? "Invio..." : "Invia link di reset"}
             </Button>
           </Form>
-          {message && <p className="mt-3 text-success">{message}</p>}
+
+          {/* Messaggi */}
+          {forgotPasswordMessage && (
+            <Alert variant="success" className="mt-3">
+              {forgotPasswordMessage}
+            </Alert>
+          )}
+          {error && (
+            <Alert variant="danger" className="mt-3">
+              {error}
+            </Alert>
+          )}
         </Card.Body>
       </Card>
     </Container>

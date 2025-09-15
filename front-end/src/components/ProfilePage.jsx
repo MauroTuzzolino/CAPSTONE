@@ -1,233 +1,135 @@
 import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { Container, Row, Col, Card, Form, Button, Image, Spinner } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { FaCommentDots, FaHeartBroken } from "react-icons/fa";
+
+import { loadUser, logout } from "../redux/actions/authActions";
+import { fetchLikedArticles, fetchComments, addComment, deleteComment, toggleLikeArticle } from "../redux/actions/articleActions";
+import { updateUser } from "../redux/actions/userActions";
 import "../css/ProfilePage.css";
 
-const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
+const ProfilePage = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [editing, setEditing] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    username: "",
-    email: "",
-    profileImageUrl: "",
-    role: "",
-  });
-  const [likedArticles, setLikedArticles] = useState([]);
-  const [loadingLikes, setLoadingLikes] = useState(true);
-  const itemsPerPage = 4;
 
-  // Modal per commenti
+  const { user, userLoaded } = useSelector((state) => state.auth);
+  const { articles } = useSelector((state) => state.articles);
+
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [activeArticle, setActiveArticle] = useState(null);
-  const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [newProfileFile, setNewProfileFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  const token = localStorage.getItem("token");
+  const itemsPerPage = 4;
 
-  // Fetch utente loggato
   useEffect(() => {
-    const fetchUser = async () => {
-      if (!token) return;
-      try {
-        const res = await fetch("http://localhost:3001/api/users/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Token non valido o scaduto");
+    const token = localStorage.getItem("token");
+    if (token && !userLoaded) dispatch(loadUser());
+  }, [dispatch, userLoaded]);
 
-        const data = await res.json();
-        setUser(data);
-        setFormData({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          username: data.username,
-          email: data.email,
-          profileImageUrl: data.profileImageUrl,
-          role: data.role,
-        });
-      } catch (err) {
-        console.error(err);
-        localStorage.removeItem("token");
-        setIsAuthenticated(false);
-        setUser(null);
-        navigate("/login");
-      }
-    };
-    fetchUser();
-  }, []);
-
-  // Fetch articoli liked con conteggio commenti
   useEffect(() => {
-    const fetchLiked = async () => {
-      if (!user) return;
-      setLoadingLikes(true);
-      try {
-        const res = await fetch("http://localhost:3001/api/users/me/liked-articles", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Errore fetch articoli piaciuti");
-        const data = await res.json();
+    if (user) {
+      setFormData({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+      });
 
-        // arricchisco con conteggio commenti
-        const withCounts = await Promise.all(
-          data.map(async (a) => {
-            try {
-              const r = await fetch(`http://localhost:3001/api/articles/${a.id}/comments`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              const comm = (await r.ok) ? await r.json() : [];
-              return {
-                ...a,
-                commentsCount: Array.isArray(comm) ? comm.length : 0,
-              };
-            } catch (err) {
-              console.error("Errore conteggio commenti per", a.id, err);
-              return { ...a, commentsCount: 0 };
-            }
+      const token = localStorage.getItem("token");
+
+      const fetchArticlesWithComments = async () => {
+        const likedArticles = await dispatch(fetchLikedArticles(token));
+        const articlesWithComments = await Promise.all(
+          likedArticles.map(async (article) => {
+            const comments = await dispatch(fetchComments(article.id, token));
+            return {
+              ...article,
+              comments: comments || [],
+              commentsCount: comments?.length || 0,
+            };
           })
         );
+        dispatch({ type: "ARTICLES_LOADED", payload: articlesWithComments });
+      };
 
-        setLikedArticles(withCounts);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoadingLikes(false);
-      }
-    };
+      fetchArticlesWithComments();
+    }
+  }, [user, dispatch]);
 
-    fetchLiked();
-  }, [user]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
+  const handleChange = (e) => setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleSave = async () => {
     try {
-      const res = await fetch(`http://localhost:3001/api/users/${user.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          username: formData.username,
-        }),
-      });
-      if (!res.ok) throw new Error("Errore aggiornamento profilo");
-      const updatedUser = await res.json();
-      setUser(updatedUser);
+      await dispatch(updateUser(formData));
       setEditing(false);
     } catch (err) {
-      console.error(err);
-      alert("Errore aggiornamento profilo");
+      console.error("Errore durante l'aggiornamento:", err);
     }
   };
-
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsAuthenticated(false);
-    setUser(null);
+    dispatch(logout());
     navigate("/login");
   };
 
-  const handleUploadImage = async () => {
-    if (!selectedFile) return;
-    try {
-      const formDataImg = new FormData();
-      formDataImg.append("file", selectedFile);
-      const res = await fetch(`http://localhost:3001/api/users/${user.id}/profile-picture`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formDataImg,
-      });
-      if (!res.ok) throw new Error("Errore upload immagine");
-      const updatedUser = await res.json();
-      setUser(updatedUser);
-      setShowModal(false);
-      setSelectedFile(null);
-    } catch (err) {
-      console.error(err);
-      alert("Errore caricamento immagine");
-    }
-  };
-
-  // Apri modale commenti
   const handleShowComments = async (article) => {
     setActiveArticle(article);
     setShowCommentsModal(true);
-    try {
-      const res = await fetch(`http://localhost:3001/api/articles/${article.id}/comments`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setComments(data);
-    } catch {
-      setComments([]);
-    }
   };
 
-  // Aggiungi commento
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
-    try {
-      const res = await fetch(`http://localhost:3001/api/articles/${activeArticle.id}/comments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content: newComment }),
-      });
-      if (!res.ok) throw new Error();
-      const saved = await res.json();
-      setComments((prev) => [saved, ...prev]);
-      setNewComment("");
+    const token = localStorage.getItem("token");
+    const newC = await dispatch(addComment(activeArticle.id, newComment, token));
 
-      setLikedArticles((prev) => prev.map((a) => (a.id === activeArticle.id ? { ...a, commentsCount: a.commentsCount + 1 } : a)));
-    } catch {
-      alert("Errore nel salvataggio del commento");
-    }
+    setActiveArticle((prev) => ({
+      ...prev,
+      comments: [...(prev.comments || []), { ...newC, canDelete: true }],
+      commentsCount: (prev.commentsCount || 0) + 1,
+    }));
+    setNewComment("");
   };
 
-  // Elimina commento
   const handleDeleteComment = async (commentId) => {
-    if (!token || !activeArticle) return;
-    try {
-      const res = await fetch(`http://localhost:3001/api/articles/${activeArticle.id}/comments/${commentId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Errore eliminazione commento");
+    const token = localStorage.getItem("token");
+    await dispatch(deleteComment(activeArticle.id, commentId, token));
 
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
-
-      setLikedArticles((prev) => prev.map((a) => (a.id === activeArticle.id ? { ...a, commentsCount: a.commentsCount - 1 } : a)));
-    } catch (err) {
-      console.error(err);
-      alert("Errore eliminazione commento");
-    }
+    setActiveArticle((prev) => ({
+      ...prev,
+      comments: prev.comments.filter((c) => c.id !== commentId),
+      commentsCount: (prev.commentsCount || 1) - 1,
+    }));
   };
 
-  const totalPages = Math.ceil(likedArticles.length / itemsPerPage);
+  const handleToggleLike = (article) => {
+    const token = localStorage.getItem("token");
+    dispatch(toggleLikeArticle(article, token));
+  };
+
+  const totalPages = Math.ceil(articles.length / itemsPerPage);
+
+  if (!userLoaded) return <Spinner animation="border" />;
 
   return (
-    <Container className="profile-container">
+    <Container className="profile-container my-5">
       <Row className="justify-content-center">
-        {/* Profilo */}
         <Col xs={12} lg={4} className="mb-4">
           <Card className="profile-card text-center p-3 shadow-sm">
-            <Image src={user?.profileImageUrl || ""} roundedCircle width="120" height="120" onClick={() => setShowModal(true)} style={{ cursor: "pointer" }} />
+            <div>
+              <Image
+                src={user?.profileImageUrl || "/default-avatar.png"}
+                roundedCircle
+                width="120"
+                height="120"
+                onClick={() => setShowProfileModal(true)}
+                style={{ cursor: "pointer" }}
+              />
+            </div>
+
             <h4 className="mt-3">
               {user?.firstName} {user?.lastName}
             </h4>
@@ -246,23 +148,23 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                 </Button>
               </>
             ) : (
-              <Form onSubmit={handleSave} className="mt-3 text-start">
+              <Form className="mt-3 text-start">
                 <Form.Group className="mb-2">
                   <Form.Label>Name</Form.Label>
-                  <Form.Control type="text" name="firstName" value={formData.firstName} onChange={handleChange} required />
+                  <Form.Control type="text" name="firstName" value={formData.firstName} onChange={handleChange} />
                 </Form.Group>
                 <Form.Group className="mb-2">
                   <Form.Label>Surname</Form.Label>
-                  <Form.Control type="text" name="lastName" value={formData.lastName} onChange={handleChange} required />
+                  <Form.Control type="text" name="lastName" value={formData.lastName} onChange={handleChange} />
                 </Form.Group>
                 <Form.Group className="mb-2">
                   <Form.Label>Username</Form.Label>
-                  <Form.Control type="text" name="username" value={formData.username} onChange={handleChange} required />
+                  <Form.Control type="text" name="username" value={formData.username} onChange={handleChange} />
                 </Form.Group>
-                <Button variant="warning" type="submit" className="w-100 mb-2">
+                <Button variant="warning" className="w-100 mb-2" onClick={handleSave}>
                   Save
                 </Button>
-                <Button variant="secondary" onClick={() => setEditing(false)} className="w-100">
+                <Button variant="secondary" className="w-100" onClick={() => setEditing(false)}>
                   Cancel
                 </Button>
               </Form>
@@ -270,42 +172,23 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
           </Card>
         </Col>
 
-        {/* Articoli liked */}
         <Col xs={12} lg={8}>
-          {loadingLikes ? (
-            <div className="text-center text-white">
-              <Spinner animation="border" />
-            </div>
-          ) : likedArticles.length === 0 ? (
-            <p className="text-muted text-center">You haven't liked any articles yet.</p>
+          {!articles.length ? (
+            <Spinner animation="border" />
           ) : (
             <>
               <Row className="g-3">
-                {likedArticles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((a) => (
+                {articles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((a) => (
                   <Col xs={12} md={6} key={a.id}>
                     <Card className="liked-card shadow-sm">
-                      <Card.Img src={a.imageUrl} alt={a.title} style={{ maxHeight: "150px", objectFit: "cover" }} />
+                      <Card.Img src={a.imageUrl || null} style={{ maxHeight: "150px", objectFit: "cover" }} />
                       <Card.Body>
                         <Card.Title>{a.title}</Card.Title>
                         <Card.Text>
-                          Likes: {a.likesCount} | Comments: {a.commentsCount}
+                          Likes: {a.likesCount || 0} | Comments: {a.commentsCount || 0}
                         </Card.Text>
                         <div className="d-flex gap-2 justify-content-end">
-                          <Button
-                            variant="danger"
-                            onClick={async () => {
-                              try {
-                                const res = await fetch(`http://localhost:3001/api/articles/${a.id}/like`, {
-                                  method: "DELETE",
-                                  headers: { Authorization: `Bearer ${token}` },
-                                });
-                                if (!res.ok) throw new Error();
-                                setLikedArticles((prev) => prev.filter((article) => article.id !== a.id));
-                              } catch {
-                                alert("Errore nel rimuovere il like");
-                              }
-                            }}
-                          >
+                          <Button variant="danger" onClick={() => handleToggleLike(a)}>
                             <FaHeartBroken /> Unlike
                           </Button>
                           <Button variant="outline-warning" onClick={() => handleShowComments(a)}>
@@ -318,17 +201,16 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
                 ))}
               </Row>
 
-              {/* Pagination */}
               <div className="d-flex justify-content-center mt-4 gap-2">
-                <Button variant="dark" onClick={() => setCurrentPage((prev) => prev - 1)} disabled={currentPage === 1}>
+                <Button variant="dark" onClick={() => setCurrentPage((p) => p - 1)} disabled={currentPage === 1}>
                   Prev
                 </Button>
-                {[...Array(totalPages)].map((_, idx) => (
-                  <Button key={idx + 1} variant={currentPage === idx + 1 ? "warning" : "dark"} onClick={() => setCurrentPage(idx + 1)}>
-                    {idx + 1}
+                {[...Array(totalPages)].map((_, i) => (
+                  <Button key={i + 1} variant={currentPage === i + 1 ? "warning" : "dark"} onClick={() => setCurrentPage(i + 1)}>
+                    {i + 1}
                   </Button>
                 ))}
-                <Button variant="dark" onClick={() => setCurrentPage((prev) => prev + 1)} disabled={currentPage === totalPages}>
+                <Button variant="dark" onClick={() => setCurrentPage((p) => p + 1)} disabled={currentPage === totalPages}>
                   Next
                 </Button>
               </div>
@@ -337,35 +219,7 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
         </Col>
       </Row>
 
-      {/* Modal upload immagine */}
-      {showModal && (
-        <div className="modal show d-block" tabIndex="-1">
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header d-flex justify-content-between align-items-center">
-                <h5 className="modal-title">Change profile picture</h5>
-                <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                <Form.Group>
-                  <Form.Label>Select an image</Form.Label>
-                  <Form.Control type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files[0])} />
-                </Form.Group>
-              </div>
-              <div className="modal-footer">
-                <Button variant="secondary" onClick={() => setShowModal(false)}>
-                  Cancel
-                </Button>
-                <Button variant="primary" onClick={handleUploadImage} disabled={!selectedFile}>
-                  Upload
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal commenti */}
+      {/* Comment Modal */}
       {showCommentsModal && activeArticle && (
         <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
@@ -376,36 +230,78 @@ const ProfilePage = ({ user, setUser, setIsAuthenticated }) => {
               </div>
               <div className="modal-body">
                 <Form.Group className="mb-3">
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={newComment}
-                    placeholder="Write a comment..."
-                    className="bg-clear text-black border-0 rounded-3"
-                    onChange={(e) => setNewComment(e.target.value)}
-                  />
+                  <Form.Control as="textarea" rows={3} value={newComment} placeholder="Write a comment..." onChange={(e) => setNewComment(e.target.value)} />
                 </Form.Group>
-                <Button variant="warning" className="mb-3 w-100 fw-bold rounded-3 shadow-sm" onClick={handleAddComment}>
+                <Button variant="warning" className="mb-3 w-100 fw-bold" onClick={handleAddComment}>
                   Add Comment
                 </Button>
+
                 <ul className="list-group list-group-flush">
-                  {comments.length === 0 ? (
-                    <li className="list-group-item bg-dark text-white border-0">No comments yet.</li>
-                  ) : (
-                    comments.map((c) => (
-                      <li key={c.id} className="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center">
-                        <span>
-                          <strong className="text-warning">{c.authorUsername}</strong>: {c.content}
-                        </span>
-                        {c.canDelete && (
-                          <Button variant="outline-danger" size="sm" onClick={() => handleDeleteComment(c.id)}>
-                            Delete
-                          </Button>
-                        )}
-                      </li>
-                    ))
-                  )}
+                  {(activeArticle.comments || []).map((c) => (
+                    <li key={c.id} className="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center">
+                      <span>
+                        <strong className="text-warning">{c.authorUsername}</strong>: {c.content}
+                      </span>
+                      {c.canDelete && (
+                        <Button variant="outline-danger" size="sm" onClick={() => handleDeleteComment(c.id)}>
+                          Delete
+                        </Button>
+                      )}
+                    </li>
+                  ))}
                 </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Picture Modal */}
+      {showProfileModal && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content bg-dark text-light p-3 rounded-4">
+              <div className="modal-header border-0">
+                <h5 className="modal-title text-warning">Aggiorna Foto Profilo</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowProfileModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <Form.Group>
+                  <Form.Label>Seleziona immagine</Form.Label>
+                  <Form.Control type="file" accept="image/*" onChange={(e) => setNewProfileFile(e.target.files[0])} />
+                </Form.Group>
+                <Button
+                  variant="warning"
+                  className="mt-3 w-100"
+                  disabled={!newProfileFile || uploading}
+                  onClick={async () => {
+                    if (!newProfileFile) return;
+                    setUploading(true);
+                    try {
+                      const token = localStorage.getItem("token");
+                      const formData = new FormData();
+                      formData.append("file", newProfileFile);
+
+                      const res = await fetch(`http://localhost:3001/api/users/${user.id}/profile-picture`, {
+                        method: "PATCH",
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: formData,
+                      });
+
+                      if (!res.ok) throw new Error("Errore durante l'upload");
+
+                      const updatedUser = await res.json();
+                      dispatch({ type: "USER_LOADED", payload: updatedUser });
+                      setShowProfileModal(false);
+                    } catch (err) {
+                      console.error(err);
+                    } finally {
+                      setUploading(false);
+                    }
+                  }}
+                >
+                  {uploading ? "Uploading..." : "Aggiorna"}
+                </Button>
               </div>
             </div>
           </div>

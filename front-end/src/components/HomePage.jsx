@@ -2,165 +2,68 @@ import React, { useEffect, useState } from "react";
 import { Card, Button, Container, Form, Modal, Spinner } from "react-bootstrap";
 import { BiLike } from "react-icons/bi";
 import { FaRegCommentDots } from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchArticles, toggleLikeArticle, fetchComments, addComment, deleteComment } from "../redux/actions/articleActions";
 import "../css/HomePage.css";
 
 const HomeMain = () => {
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const dispatch = useDispatch();
   const token = localStorage.getItem("token");
+
+  // ===== Stato Redux =====
+  const { articles, loading } = useSelector((state) => state.articles);
+
+  // ===== Stato locale =====
+  const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeArticle, setActiveArticle] = useState(null);
   const [commentInput, setCommentInput] = useState("");
 
+  // Toast notifiche
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ ...toast, show: false }), 3000);
+  };
+
   const itemsPerPage = 5;
   const fallbackImage = "../assets/notFoundImg.jpg";
 
+  // ===== Carica articoli =====
   useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        let url;
-        let options = {};
+    dispatch(fetchArticles(token));
+  }, [dispatch, token]);
 
-        if (token) {
-          url = "http://localhost:3001/api/articles?limit=20&offset=0";
-          options = { headers: { Authorization: `Bearer ${token}` } };
-        } else {
-          url = "https://api.spaceflightnewsapi.net/v4/articles?limit=20";
-        }
-
-        const res = await fetch(url, options);
-        const data = await res.json();
-
-        if (token) {
-          setArticles(data.content || []);
-        } else {
-          setArticles(
-            data.results.map((a) => ({
-              id: a.id,
-              title: a.title,
-              url: a.url,
-              imageUrl: a.image_url,
-              publishedAt: a.published_at,
-              summary: a.summary,
-            }))
-          );
-        }
-
-        setLoading(false);
-      } catch (err) {
-        console.error("Errore nel caricamento degli articoli:", err);
-        setLoading(false);
-      }
-    };
-
-    fetchArticles();
-  }, [token]);
-
-  // Toggle like
-  const toggleLike = async (article) => {
-    if (!token) return;
-    const url = `http://localhost:3001/api/articles/${article.id}/like`;
-    try {
-      const res = await fetch(url, {
-        method: article.userHasLiked ? "DELETE" : "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Errore like/unlike");
-
-      setArticles((prev) =>
-        prev.map((a) =>
-          a.id === article.id
-            ? {
-                ...a,
-                userHasLiked: !a.userHasLiked,
-                likesCount: a.userHasLiked ? a.likesCount - 1 : a.likesCount + 1,
-              }
-            : a
-        )
-      );
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Apri modal commenti
+  // ===== Modal commenti =====
   const openCommentsModal = async (article) => {
-    setActiveArticle({ ...article, comments: [] });
+    setActiveArticle(article);
     setCommentInput("");
     setModalOpen(true);
 
     if (token) {
-      try {
-        const res = await fetch(`http://localhost:3001/api/articles/${article.id}/comments`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        setActiveArticle((prev) => ({ ...prev, comments: data }));
-      } catch (err) {
-        console.error("Errore nel caricamento dei commenti:", err);
-      }
+      await dispatch(fetchComments(article.id, token));
     }
   };
 
-  // Invia commento
   const submitComment = async () => {
-    if (!commentInput.trim()) return;
-
-    const url = `http://localhost:3001/api/articles/${activeArticle.id}/comments`;
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content: commentInput }),
-      });
-
-      if (!res.ok) throw new Error("Errore aggiunta commento");
-
-      const newComment = await res.json();
-
-      setActiveArticle((prev) => ({
-        ...prev,
-        comments: [newComment, ...(prev.comments || [])],
-        commentsCount: (prev.commentsCount || 0) + 1,
-      }));
-
-      setCommentInput("");
-
-      setArticles((prev) => prev.map((a) => (a.id === activeArticle.id ? { ...a, commentsCount: (a.commentsCount || 0) + 1 } : a)));
-    } catch (err) {
-      console.error(err);
-    }
+    if (!commentInput.trim() || !activeArticle) return;
+    await dispatch(addComment(activeArticle.id, commentInput, token));
+    setCommentInput("");
+    showToast("Commento aggiunto!", "success");
   };
 
-  // Elimina commento
-  const deleteComment = async (commentId) => {
-    if (!token || !activeArticle) return;
-
-    try {
-      const res = await fetch(`http://localhost:3001/api/articles/${activeArticle.id}/comments/${commentId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) throw new Error("Errore eliminazione commento");
-
-      setActiveArticle((prev) => ({
-        ...prev,
-        comments: prev.comments.filter((c) => c.id !== commentId),
-        commentsCount: (prev.commentsCount || 1) - 1,
-      }));
-
-      setArticles((prev) => prev.map((a) => (a.id === activeArticle.id ? { ...a, commentsCount: (a.commentsCount || 1) - 1 } : a)));
-    } catch (err) {
-      console.error(err);
-    }
+  const handleDeleteComment = async (commentId) => {
+    if (!activeArticle) return;
+    await dispatch(deleteComment(activeArticle.id, commentId, token));
+    showToast("Commento eliminato!", "warning");
   };
 
-  // Paginazione
+  const handleToggleLike = (article) => {
+    dispatch(toggleLikeArticle(article, token));
+    showToast(article.userHasLiked ? "Like rimosso" : "Articolo apprezzato!", "success");
+  };
+
+  // ===== Paginazione =====
   const totalPages = Math.ceil(articles.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentArticles = articles.slice(startIndex, startIndex + itemsPerPage);
@@ -206,9 +109,7 @@ const HomeMain = () => {
                     <Card.Title className="card-title text-truncate" title={article.title}>
                       {article.title}
                     </Card.Title>
-
                     <Card.Text className="date-text">{new Date(article.publishedAt).toLocaleDateString()}</Card.Text>
-
                     <Card.Text className="summary-text">{article.summary?.slice(0, 150)}...</Card.Text>
 
                     {token && (
@@ -217,7 +118,7 @@ const HomeMain = () => {
                           variant={article.userHasLiked ? "danger" : "outline-dark"}
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleLike(article);
+                            handleToggleLike(article);
                           }}
                           className="me-2"
                         >
@@ -267,9 +168,8 @@ const HomeMain = () => {
                           <span>
                             <strong className="text-warning">{c.authorUsername}</strong>: {c.content}
                           </span>
-
                           {c.canDelete && (
-                            <Button variant="outline-danger" size="sm" onClick={() => deleteComment(c.id)}>
+                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteComment(c.id)}>
                               Delete
                             </Button>
                           )}
@@ -302,6 +202,15 @@ const HomeMain = () => {
       </div>
 
       <div className="col-1 d-none d-lg-block"></div>
+
+      {/* Toast notifiche */}
+      {toast.show && (
+        <div aria-live="polite" aria-atomic="true" style={{ position: "fixed", top: 20, right: 20, zIndex: 1050 }}>
+          <div className={`toast show text-white ${toast.type === "success" ? "bg-success" : toast.type === "warning" ? "bg-warning" : "bg-danger"}`}>
+            <div className="toast-body">{toast.message}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
