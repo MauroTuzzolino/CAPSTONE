@@ -231,4 +231,9 @@ public class UserService implements UserDetailsService {
     private String safe(String value) {
         return value != null ? value : "";
     }
+
+    // Restituisce tutti gli utenti (solo ADMIN)
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
 }

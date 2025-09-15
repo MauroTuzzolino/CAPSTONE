@@ -5,11 +5,12 @@ import { BsHouse, BsBoxArrowInRight } from "react-icons/bs";
 import logo from "../assets/LOGO-CAPSTONE.png";
 import "../css/NavBar.css";
 import { GiRocketThruster } from "react-icons/gi";
-import { FaSatellite } from "react-icons/fa";
+import { FaSatellite, FaTable } from "react-icons/fa";
 
 const AppNavbar = ({ isAuthenticated, user, setIsAuthenticated }) => {
   const handleLogout = () => {
     setIsAuthenticated(false);
+    // qui puoi anche aggiungere la logica per rimuovere il token
   };
 
   return (
@@ -18,6 +19,7 @@ const AppNavbar = ({ isAuthenticated, user, setIsAuthenticated }) => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" className="ms-auto custom-toggler">
           <GiRocketThruster size={28} color="#fff" />
         </Navbar.Toggle>
+
         <Navbar.Collapse id="basic-navbar-nav">
           <div className="d-flex flex-column flex-lg-row w-100 align-items-center justify-content-lg-end justify-content-center">
             {/* Links */}
@@ -31,10 +33,19 @@ const AppNavbar = ({ isAuthenticated, user, setIsAuthenticated }) => {
                   <BsBoxArrowInRight className="nav-icon me-1" /> Login
                 </Nav.Link>
               ) : (
-                <Nav.Link as={NavLink} to="/profile" className="d-flex align-items-center nav-link-custom">
-                  <Image src={user?.profileImageUrl || "https://via.placeholder.com/30"} roundedCircle width="30" height="30" className="me-2" />
-                  {user?.username || "Profile"}
-                </Nav.Link>
+                <>
+                  <Nav.Link as={NavLink} to="/profile" className="d-flex align-items-center nav-link-custom">
+                    <Image src={user?.profileImageUrl || "https://via.placeholder.com/30"} roundedCircle width="30" height="30" className="me-2" />
+                    {user?.username || "Profile"}
+                  </Nav.Link>
+
+                  {/* Link Admin visibile solo agli utenti con ruolo ADMIN */}
+                  {user?.role === "ADMIN" && (
+                    <Nav.Link as={NavLink} to="/admin/users" className="d-flex align-items-center nav-link-custom">
+                      <FaTable className="nav-icon me-1" /> Admin Panel
+                    </Nav.Link>
+                  )}
+                </>
               )}
 
               <Nav.Link href="https://stellarium-web.org/" target="_blank" rel="noopener noreferrer" className="d-flex align-items-center nav-link-custom">

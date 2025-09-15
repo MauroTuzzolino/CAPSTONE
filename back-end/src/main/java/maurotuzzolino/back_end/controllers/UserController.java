@@ -27,6 +27,13 @@ public class UserController {
         this.userService = userService;
     }
 
+    // GET tutti gli utenti (solo ADMIN)
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<User> getAllUsers() {
+        return userService.getAllUsers();
+    }
+
     // Modifica completa (Admin o il proprietario)
     @PostMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or #id == principal.id")

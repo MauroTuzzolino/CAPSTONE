@@ -10,6 +10,7 @@ import AuthLayout from "./components/AuthLayout";
 import ProfilePage from "./components/ProfilePage";
 import ForgotPasswordPage from "./components/ForgotPasswordPage";
 import ResetPasswordPage from "./components/ResetPasswordPage";
+import AdminUsers from "./components/AdminUsers";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -51,13 +52,31 @@ function App() {
     return <div className="text-center mt-5 text-white">Loading...</div>;
   }
 
+  // Wrapper per proteggere le route admin
+  const AdminRoute = ({ children }) => {
+    if (!isAuthenticated) return <Navigate to="/login" />;
+    if (user?.role !== "ADMIN") return <Navigate to="/" />;
+    return children;
+  };
+
   return (
     <Router>
       <Routes>
+        {/* Route principali con MainLayout */}
         <Route element={<MainLayout isAuthenticated={isAuthenticated} user={user} setIsAuthenticated={setIsAuthenticated} />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/profile" element={<ProfilePage user={user} setUser={setUser} setIsAuthenticated={setIsAuthenticated} />} />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <AdminUsers />
+              </AdminRoute>
+            }
+          />
         </Route>
+
+        {/* Route di autenticazione con AuthLayout */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage setIsAuthenticated={setIsAuthenticated} setUser={setUser} />} />
           <Route path="/register" element={<RegisterPage setIsAuthenticated={setIsAuthenticated} setUser={setUser} />} />
