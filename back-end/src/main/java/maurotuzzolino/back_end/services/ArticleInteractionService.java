@@ -6,6 +6,7 @@ import maurotuzzolino.back_end.entities.ArticleComment;
 import maurotuzzolino.back_end.entities.ArticleLike;
 import maurotuzzolino.back_end.entities.NewsArticle;
 import maurotuzzolino.back_end.entities.User;
+import maurotuzzolino.back_end.enums.Role;
 import maurotuzzolino.back_end.exceptions.BadRequestException;
 import maurotuzzolino.back_end.exceptions.NotFoundException;
 import maurotuzzolino.back_end.repositories.ArticleCommentRepository;
@@ -140,4 +141,27 @@ public class ArticleInteractionService {
                     return dto;
                 }).toList();
     }
+
+    @Transactional
+    public void deleteComment(Long externalId, Long commentId, User currentUser) {
+        NewsArticle article = newsArticleRepository.findByExternalId(externalId)
+                .orElseThrow(() -> new NotFoundException("Articolo non trovato"));
+
+        ArticleComment comment = articleCommentRepository.findById(commentId)
+                .orElseThrow(() -> new NotFoundException("Commento non trovato"));
+
+        if (!comment.getArticle().equals(article)) {
+            throw new BadRequestException("Il commento non appartiene a questo articolo");
+        }
+
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+
+        if (!isAdmin && !comment.getAuthor().getId().equals(currentUser.getId())) {
+            throw new BadRequestException("Non hai i permessi per eliminare questo commento");
+        }
+
+        articleCommentRepository.delete(comment);
+    }
+
+
 }

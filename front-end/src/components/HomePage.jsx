@@ -136,6 +136,30 @@ const HomeMain = () => {
     }
   };
 
+  // Elimina commento
+  const deleteComment = async (commentId) => {
+    if (!token || !activeArticle) return;
+
+    try {
+      const res = await fetch(`http://localhost:3001/api/articles/${activeArticle.id}/comments/${commentId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error("Errore eliminazione commento");
+
+      setActiveArticle((prev) => ({
+        ...prev,
+        comments: prev.comments.filter((c) => c.id !== commentId),
+        commentsCount: (prev.commentsCount || 1) - 1,
+      }));
+
+      setArticles((prev) => prev.map((a) => (a.id === activeArticle.id ? { ...a, commentsCount: (a.commentsCount || 1) - 1 } : a)));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // Paginazione
   const totalPages = Math.ceil(articles.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -216,7 +240,7 @@ const HomeMain = () => {
             </Card>
           ))}
 
-          {/* Modal commenti (dark style come in ProfilePage) */}
+          {/* Modal commenti */}
           <Modal show={modalOpen} onHide={() => setModalOpen(false)} centered contentClassName="bg-dark text-light shadow-lg rounded-4">
             <Modal.Header closeButton className="border-0">
               <Modal.Title className="fw-bold text-warning">Comments</Modal.Title>
@@ -239,8 +263,16 @@ const HomeMain = () => {
                   {activeArticle.comments && activeArticle.comments.length > 0 ? (
                     <div className="comments-list">
                       {activeArticle.comments.map((c) => (
-                        <div key={c.id} className="border-bottom pb-2 mb-2">
-                          <strong className="text-warning">{c.authorUsername}</strong>: {c.content}
+                        <div key={c.id} className="border-bottom pb-2 mb-2 d-flex justify-content-between">
+                          <span>
+                            <strong className="text-warning">{c.authorUsername}</strong>: {c.content}
+                          </span>
+
+                          {c.canDelete && (
+                            <Button variant="outline-danger" size="sm" onClick={() => deleteComment(c.id)}>
+                              Delete
+                            </Button>
+                          )}
                         </div>
                       ))}
                     </div>

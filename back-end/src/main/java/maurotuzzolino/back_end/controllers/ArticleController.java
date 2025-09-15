@@ -5,6 +5,7 @@ import maurotuzzolino.back_end.DTO.CommentDTO;
 import maurotuzzolino.back_end.DTO.CreateCommentRequest;
 import maurotuzzolino.back_end.DTO.PagedResponse;
 import maurotuzzolino.back_end.entities.User;
+import maurotuzzolino.back_end.enums.Role;
 import maurotuzzolino.back_end.services.ArticleInteractionService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -56,7 +57,31 @@ public class ArticleController {
 
     // Lista commenti (pubblico o autenticato)
     @GetMapping("/{externalId}/comments")
-    public List<CommentDTO> comments(@PathVariable Long externalId) {
-        return articleService.getComments(externalId);
+    public List<CommentDTO> comments(@PathVariable Long externalId,
+                                     @AuthenticationPrincipal User currentUser) {
+        return articleService.getComments(externalId).stream().map(c -> {
+            CommentDTO dto = new CommentDTO();
+            dto.id = c.getId();
+            dto.authorId = c.getAuthorId();
+            dto.authorUsername = c.getAuthorUsername();
+            dto.content = c.getContent();
+            dto.createdAt = c.getCreatedAt();
+
+            boolean isAdmin = currentUser != null && currentUser.getRole() == Role.ADMIN;
+            boolean isAuthor = currentUser != null && currentUser.getId().equals(c.getAuthorId());
+
+            dto.canDelete = isAdmin || isAuthor;
+
+            return dto;
+        }).toList();
+    }
+
+    // Elimina commento (solo admin o autore)
+    @DeleteMapping("/{externalId}/comments/{commentId}")
+    @PreAuthorize("hasRole('ADMIN') or #currentUser.id == @articleCommentRepository.findById(#commentId).get().author.id")
+    public void deleteComment(@PathVariable Long externalId,
+                              @PathVariable Long commentId,
+                              @AuthenticationPrincipal User currentUser) {
+        articleService.deleteComment(externalId, commentId, currentUser);
     }
 }
