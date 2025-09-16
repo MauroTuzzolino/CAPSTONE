@@ -132,7 +132,46 @@ const AdminUsers = () => {
       </table>
 
       {/* Modal modifica utente */}
-      {/* ... uguale a prima ... */}
+      <Modal show={showModal} onHide={handleClose} centered className="text-dark">
+        <Modal.Header closeButton className="bg-primary text-white">
+          <Modal.Title>Edit User</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="bg-light">
+          <Form>
+            <Form.Group className="mb-2">
+              <Form.Label>Name</Form.Label>
+              <Form.Control name="firstName" value={formData.firstName || ""} onChange={handleChange} className="rounded" />
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label>Surname</Form.Label>
+              <Form.Control name="lastName" value={formData.lastName || ""} onChange={handleChange} className="rounded" />
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label>Username</Form.Label>
+              <Form.Control name="username" value={formData.username || ""} onChange={handleChange} className="rounded" />
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label>Email</Form.Label>
+              <Form.Control name="email" value={formData.email || ""} onChange={handleChange} className="rounded" />
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label>Role</Form.Label>
+              <Form.Select name="role" value={formData.role || "USER"} onChange={handleChange} className="rounded">
+                <option value="USER">USER</option>
+                <option value="ADMIN">ADMIN</option>
+              </Form.Select>
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer className="bg-light">
+          <Button variant="secondary" onClick={handleClose}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={handleSave}>
+            Save
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Modal conferma eliminazione */}
       <Modal show={confirmDelete.show} onHide={closeConfirm} centered>

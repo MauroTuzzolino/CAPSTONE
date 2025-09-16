@@ -1,4 +1,7 @@
 // ------------------------ FETCH USERS (ADMIN) ------------------------
+/**
+ * Recupera la lista di tutti gli utenti. Solo utenti con token valido (admin).
+ */
 export const fetchUsers = () => async (dispatch) => {
   const token = localStorage.getItem("token");
   if (!token) return;
@@ -12,7 +15,7 @@ export const fetchUsers = () => async (dispatch) => {
 
     if (!res.ok) {
       const errData = await res.json();
-      throw new Error(errData.message || "Errore nel caricamento utenti");
+      throw new Error(errData.message || "Error loading users");
     }
 
     const users = await res.json();
@@ -24,6 +27,10 @@ export const fetchUsers = () => async (dispatch) => {
 };
 
 // ------------------------ UPDATE USER ------------------------
+/**
+ * Aggiorna i dati del profilo dell'utente loggato.
+ * Può essere usato sia per update personale sia per update admin.
+ */
 export const updateUser = (userData) => async (dispatch, getState) => {
   const token = localStorage.getItem("token");
   if (!token) return;
@@ -31,12 +38,12 @@ export const updateUser = (userData) => async (dispatch, getState) => {
   try {
     dispatch({ type: "USER_UPDATE_REQUEST" });
 
-    // Prendi l'ID dell'utente loggato dallo state Redux
+    // Recupera ID utente dallo state Redux
     const { user } = getState().auth;
     if (!user) throw new Error("Utente non loggato");
 
     const res = await fetch(`http://localhost:3001/api/users/${user.id}`, {
-      method: "PATCH", // PATCH per partial update
+      method: "PATCH", // PATCH per aggiornamento parziale
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -46,7 +53,7 @@ export const updateUser = (userData) => async (dispatch, getState) => {
 
     if (!res.ok) {
       const errData = await res.json();
-      throw new Error(errData.message || "Errore durante l'aggiornamento");
+      throw new Error(errData.message || "Error while updating");
     }
 
     const updatedUser = await res.json();
@@ -58,6 +65,9 @@ export const updateUser = (userData) => async (dispatch, getState) => {
 };
 
 // ------------------------ DELETE USER (ADMIN) ------------------------
+/**
+ * Cancella un utente tramite ID. Solo admin con token valido.
+ */
 export const deleteUser = (userId) => async (dispatch) => {
   const token = localStorage.getItem("token");
   if (!token) return;
@@ -72,7 +82,7 @@ export const deleteUser = (userId) => async (dispatch) => {
 
     if (!res.ok) {
       const errData = await res.json();
-      throw new Error(errData.message || "Errore durante la cancellazione");
+      throw new Error(errData.message || "Error while deleting");
     }
 
     dispatch({ type: "USER_DELETED", payload: userId });

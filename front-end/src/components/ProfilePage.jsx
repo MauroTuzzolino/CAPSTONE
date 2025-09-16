@@ -4,37 +4,45 @@ import { Container, Row, Col, Card, Form, Button, Image, Spinner } from "react-b
 import { useNavigate } from "react-router-dom";
 import { FaCommentDots, FaHeartBroken } from "react-icons/fa";
 
+// Import delle azioni Redux
 import { loadUser, logout } from "../redux/actions/authActions";
 import { fetchLikedArticles, fetchComments, addComment, deleteComment, toggleLikeArticle } from "../redux/actions/articleActions";
 import { updateUser } from "../redux/actions/userActions";
+
+// Stile CSS dedicato
 import "../css/ProfilePage.css";
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // Stato globale da Redux
   const { user, userLoaded } = useSelector((state) => state.auth);
   const { articles } = useSelector((state) => state.articles);
 
-  const [editing, setEditing] = useState(false);
-  const [formData, setFormData] = useState({});
-  const [currentPage, setCurrentPage] = useState(1);
-  const [showCommentsModal, setShowCommentsModal] = useState(false);
-  const [activeArticle, setActiveArticle] = useState(null);
-  const [newComment, setNewComment] = useState("");
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [newProfileFile, setNewProfileFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  // Stati locali
+  const [editing, setEditing] = useState(false); // modalità modifica dati profilo
+  const [formData, setFormData] = useState({}); // campi form profilo
+  const [currentPage, setCurrentPage] = useState(1); // paginazione articoli
+  const [showCommentsModal, setShowCommentsModal] = useState(false); // modal commenti
+  const [activeArticle, setActiveArticle] = useState(null); // articolo selezionato
+  const [newComment, setNewComment] = useState(""); // testo nuovo commento
+  const [showProfileModal, setShowProfileModal] = useState(false); // modal per immagine profilo
+  const [newProfileFile, setNewProfileFile] = useState(null); // file immagine caricata
+  const [uploading, setUploading] = useState(false); // stato caricamento immagine
 
-  const itemsPerPage = 4;
+  const itemsPerPage = 4; // numero articoli per pagina
 
+  // Caricamento utente se non già caricato
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token && !userLoaded) dispatch(loadUser());
   }, [dispatch, userLoaded]);
 
+  // Caricamento articoli piaciuti e relativi commenti
   useEffect(() => {
     if (user) {
+      // Precompilazione form profilo
       setFormData({
         firstName: user.firstName,
         lastName: user.lastName,
@@ -44,7 +52,10 @@ const ProfilePage = () => {
       const token = localStorage.getItem("token");
 
       const fetchArticlesWithComments = async () => {
+        // Ottengo articoli piaciuti
         const likedArticles = await dispatch(fetchLikedArticles(token));
+
+        // Per ogni articolo, ottengo i commenti
         const articlesWithComments = await Promise.all(
           likedArticles.map(async (article) => {
             const comments = await dispatch(fetchComments(article.id, token));
@@ -55,6 +66,8 @@ const ProfilePage = () => {
             };
           })
         );
+
+        // Aggiorno lo store
         dispatch({ type: "ARTICLES_LOADED", payload: articlesWithComments });
       };
 
@@ -62,7 +75,10 @@ const ProfilePage = () => {
     }
   }, [user, dispatch]);
 
+  // Gestione modifica form profilo
   const handleChange = (e) => setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  // Salvataggio modifiche profilo
   const handleSave = async () => {
     try {
       await dispatch(updateUser(formData));
@@ -71,29 +87,37 @@ const ProfilePage = () => {
       console.error("Errore durante l'aggiornamento:", err);
     }
   };
+
+  // Logout
   const handleLogout = () => {
     dispatch(logout());
     navigate("/login");
   };
 
+  // Apertura modal commenti
   const handleShowComments = async (article) => {
     setActiveArticle(article);
     setShowCommentsModal(true);
   };
 
+  // Aggiunta nuovo commento
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
     const token = localStorage.getItem("token");
+
     const newC = await dispatch(addComment(activeArticle.id, newComment, token));
 
+    // Aggiornamento locale stato articolo
     setActiveArticle((prev) => ({
       ...prev,
       comments: [...(prev.comments || []), { ...newC, canDelete: true }],
       commentsCount: (prev.commentsCount || 0) + 1,
     }));
+
     setNewComment("");
   };
 
+  // Eliminazione commento
   const handleDeleteComment = async (commentId) => {
     const token = localStorage.getItem("token");
     await dispatch(deleteComment(activeArticle.id, commentId, token));
@@ -105,20 +129,25 @@ const ProfilePage = () => {
     }));
   };
 
+  // Toggle like/unlike articolo
   const handleToggleLike = (article) => {
     const token = localStorage.getItem("token");
     dispatch(toggleLikeArticle(article, token, true));
   };
 
+  // Calcolo numero totale di pagine
   const totalPages = Math.ceil(articles.length / itemsPerPage);
 
+  // Spinner se dati utente non ancora caricati
   if (!userLoaded) return <Spinner animation="border" />;
 
   return (
     <Container className="profile-container my-5">
       <Row className="justify-content-center">
+        {/* CARD PROFILO */}
         <Col xs={12} lg={4} className="mb-4">
           <Card className="profile-card text-center p-3 shadow-sm">
+            {/* Immagine profilo */}
             <div>
               <Image
                 src={user?.profileImageUrl || "/default-avatar.png"}
@@ -130,6 +159,7 @@ const ProfilePage = () => {
               />
             </div>
 
+            {/* Info utente */}
             <h4 className="mt-3">
               {user?.firstName} {user?.lastName}
             </h4>
@@ -138,6 +168,7 @@ const ProfilePage = () => {
             </p>
             <p>{user?.email}</p>
 
+            {/* Pulsanti / Form modifica */}
             {!editing ? (
               <>
                 <Button variant="warning" className="w-100 mb-2" onClick={() => setEditing(true)}>
@@ -172,9 +203,10 @@ const ProfilePage = () => {
           </Card>
         </Col>
 
+        {/* CARD ARTICOLI */}
         <Col xs={12} lg={8}>
           {articles.length === 0 ? (
-            <p className="text-light text-center fs-5 mt-5">Nessun articolo piaciuto</p>
+            <p className="text-light text-center fs-5 mt-5">No liked items</p>
           ) : (
             <>
               <Row className="g-3">
@@ -201,7 +233,7 @@ const ProfilePage = () => {
                 ))}
               </Row>
 
-              {/* Paginazione */}
+              {/* PAGINAZIONE */}
               <div className="d-flex justify-content-center mt-4 gap-2">
                 <Button variant="dark" onClick={() => setCurrentPage((p) => p - 1)} disabled={currentPage === 1}>
                   Prev
@@ -220,7 +252,7 @@ const ProfilePage = () => {
         </Col>
       </Row>
 
-      {/* Comment Modal */}
+      {/* MODAL COMMENTI */}
       {showCommentsModal && activeArticle && (
         <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
@@ -257,18 +289,18 @@ const ProfilePage = () => {
         </div>
       )}
 
-      {/* Profile Picture Modal */}
+      {/* MODAL FOTO PROFILO */}
       {showProfileModal && (
         <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content bg-dark text-light p-3 rounded-4">
               <div className="modal-header border-0">
-                <h5 className="modal-title text-warning">Aggiorna Foto Profilo</h5>
+                <h5 className="modal-title text-warning">Update your profile picture</h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowProfileModal(false)}></button>
               </div>
               <div className="modal-body">
                 <Form.Group>
-                  <Form.Label>Seleziona immagine</Form.Label>
+                  <Form.Label>Choose an image</Form.Label>
                   <Form.Control type="file" accept="image/*" onChange={(e) => setNewProfileFile(e.target.files[0])} />
                 </Form.Group>
                 <Button
@@ -289,7 +321,7 @@ const ProfilePage = () => {
                         body: formData,
                       });
 
-                      if (!res.ok) throw new Error("Errore durante l'upload");
+                      if (!res.ok) throw new Error("Error while uploading");
 
                       const updatedUser = await res.json();
                       dispatch({ type: "USER_LOADED", payload: updatedUser });
@@ -301,7 +333,7 @@ const ProfilePage = () => {
                     }
                   }}
                 >
-                  {uploading ? "Uploading..." : "Aggiorna"}
+                  {uploading ? "Uploading..." : "Update"}
                 </Button>
               </div>
             </div>

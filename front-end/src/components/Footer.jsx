@@ -16,7 +16,7 @@ const Footer = () => {
 
           {/* Colonna 2: Social */}
           <Col lg={4}>
-            <h6 className="mb-3 footer-subtitle">Seguici</h6>
+            <h6 className="mb-3 footer-subtitle">Follow us</h6>
             <div className="d-flex justify-content-center justify-content-lg-start gap-3">
               <a href="https://facebook.com" target="_blank" rel="noreferrer" className="social-icon">
                 <BsFacebook />
