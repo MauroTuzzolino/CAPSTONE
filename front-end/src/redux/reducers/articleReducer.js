@@ -109,7 +109,7 @@ export const articleReducer = (state = initialState, action) => {
         ...state,
         articles: state.articles
           .map((a) =>
-            a.id === action.payload
+            a.id === action.payload.articleId
               ? {
                   ...a,
                   userHasLiked: !a.userHasLiked,
@@ -117,7 +117,7 @@ export const articleReducer = (state = initialState, action) => {
                 }
               : a
           )
-          .filter((a) => a.userHasLiked), // rimuove quelli che non sono più liked
+          .filter((a) => !action.payload.removeFromList || a.userHasLiked),
       };
     case "COMMENTS_LOADED":
       return {

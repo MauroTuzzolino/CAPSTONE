@@ -107,7 +107,7 @@ const ProfilePage = () => {
 
   const handleToggleLike = (article) => {
     const token = localStorage.getItem("token");
-    dispatch(toggleLikeArticle(article, token));
+    dispatch(toggleLikeArticle(article, token, true));
   };
 
   const totalPages = Math.ceil(articles.length / itemsPerPage);
@@ -173,8 +173,8 @@ const ProfilePage = () => {
         </Col>
 
         <Col xs={12} lg={8}>
-          {!articles.length ? (
-            <Spinner animation="border" />
+          {articles.length === 0 ? (
+            <p className="text-light text-center fs-5 mt-5">Nessun articolo piaciuto</p>
           ) : (
             <>
               <Row className="g-3">
@@ -201,6 +201,7 @@ const ProfilePage = () => {
                 ))}
               </Row>
 
+              {/* Paginazione */}
               <div className="d-flex justify-content-center mt-4 gap-2">
                 <Button variant="dark" onClick={() => setCurrentPage((p) => p - 1)} disabled={currentPage === 1}>
                   Prev

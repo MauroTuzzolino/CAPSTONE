@@ -52,21 +52,23 @@ export const fetchLikedArticles = (token) => async (dispatch) => {
 };
 
 // ------------------------ TOGGLE LIKE ------------------------
-export const toggleLikeArticle = (article, token) => async (dispatch) => {
-  if (!token) return;
-  const url = `http://localhost:3001/api/articles/${article.id}/like`;
+export const toggleLikeArticle =
+  (article, token, removeFromList = false) =>
+  async (dispatch) => {
+    if (!token) return;
+    const url = `http://localhost:3001/api/articles/${article.id}/like`;
 
-  try {
-    await fetch(url, {
-      method: article.userHasLiked ? "DELETE" : "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    try {
+      await fetch(url, {
+        method: article.userHasLiked ? "DELETE" : "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    dispatch({ type: "ARTICLE_TOGGLE_LIKE", payload: article.id });
-  } catch (err) {
-    console.error(err);
-  }
-};
+      dispatch({ type: "ARTICLE_TOGGLE_LIKE", payload: { articleId: article.id, removeFromList } });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
 // ------------------------ COMMENTS ------------------------
 export const fetchComments = (articleId, token) => async (dispatch) => {

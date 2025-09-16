@@ -36,18 +36,26 @@ const HomeMain = () => {
 
   // ===== Modal commenti =====
   const openCommentsModal = async (article) => {
-    setActiveArticle(article);
     setCommentInput("");
-    setModalOpen(true);
-
     if (token) {
-      await dispatch(fetchComments(article.id, token));
+      const comments = await dispatch(fetchComments(article.id, token));
+      setActiveArticle({ ...article, comments: comments || [], commentsCount: comments?.length || 0 });
+    } else {
+      setActiveArticle(article);
     }
+    setModalOpen(true);
   };
 
   const submitComment = async () => {
     if (!commentInput.trim() || !activeArticle) return;
-    await dispatch(addComment(activeArticle.id, commentInput, token));
+    const newComment = await dispatch(addComment(activeArticle.id, commentInput, token));
+
+    setActiveArticle((prev) => ({
+      ...prev,
+      comments: [...(prev.comments || []), { ...newComment, canDelete: true }],
+      commentsCount: (prev.commentsCount || 0) + 1,
+    }));
+
     setCommentInput("");
     showToast("Commento aggiunto!", "success");
   };
@@ -55,11 +63,18 @@ const HomeMain = () => {
   const handleDeleteComment = async (commentId) => {
     if (!activeArticle) return;
     await dispatch(deleteComment(activeArticle.id, commentId, token));
+
+    setActiveArticle((prev) => ({
+      ...prev,
+      comments: prev.comments.filter((c) => c.id !== commentId),
+      commentsCount: (prev.commentsCount || 1) - 1,
+    }));
+
     showToast("Commento eliminato!", "warning");
   };
 
   const handleToggleLike = (article) => {
-    dispatch(toggleLikeArticle(article, token));
+    dispatch(toggleLikeArticle(article, token, false));
     showToast(article.userHasLiked ? "Like rimosso" : "Articolo apprezzato!", "success");
   };
 
