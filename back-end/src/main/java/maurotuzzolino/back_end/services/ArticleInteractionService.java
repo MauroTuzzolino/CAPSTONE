@@ -25,6 +25,7 @@ public class ArticleInteractionService {
     private final ArticleLikeRepository articleLikeRepository;
     private final ArticleCommentRepository articleCommentRepository;
 
+    // Inietto client esterno e repository locali
     public ArticleInteractionService(SpaceflightNewsClient spaceflightNewsClient,
                                      NewsArticleRepository newsArticleRepository,
                                      ArticleLikeRepository articleLikeRepository,
@@ -35,7 +36,7 @@ public class ArticleInteractionService {
         this.articleCommentRepository = articleCommentRepository;
     }
 
-    // Utility: trova o crea il proxy locale dal externalId
+    // Utility: assicuro che esista un articolo locale, altrimenti lo creo
     @Transactional
     public NewsArticle ensureArticle(Long externalId, String title, String url, String imageUrl) {
         return newsArticleRepository.findByExternalId(externalId).orElseGet(() -> {
@@ -43,18 +44,19 @@ public class ArticleInteractionService {
             a.setTitle(title);
             a.setUrl(url);
             a.setImageUrl(imageUrl);
-            return newsArticleRepository.save(a);
+            return newsArticleRepository.save(a); // salvo il proxy locale
         });
     }
 
-    // GET arricchito con paginazione
+    // Ottiene articoli arricchiti con like, commenti e info dell'utente
     @Transactional
     public PagedResponse<ArticleDTO> getArticlesWithStats(int page, int size, User currentUser) {
         int offset = page * size;
+        // prendo articoli dal client esterno
         SpaceflightArticlesResponse resp = spaceflightNewsClient.fetchArticles(size, offset);
 
         List<ArticleDTO> articles = resp.getResults().stream().map(item -> {
-            // assicurati che esista l'articolo locale
+            // assicuro l'esistenza dell'articolo locale
             NewsArticle article = ensureArticle(
                     item.getId(),
                     item.getTitle(),
@@ -62,11 +64,13 @@ public class ArticleInteractionService {
                     item.getImageUrl()
             );
 
+            // conto like e commenti e controllo se l'utente ha messo like
             long likes = articleLikeRepository.countByArticle(article);
             long comments = articleCommentRepository.countByArticle(article);
             boolean userLiked = currentUser != null &&
                     articleLikeRepository.existsByUserAndArticle(currentUser, article);
 
+            // costruisco il DTO
             ArticleDTO dto = new ArticleDTO();
             dto.id = item.getId();
             dto.title = item.getTitle();
@@ -83,19 +87,20 @@ public class ArticleInteractionService {
         return new PagedResponse<>(articles, page, size, resp.getCount());
     }
 
-    // LIKE
+    // Aggiunge like a un articolo
     @Transactional
     public void like(Long externalId, User user) {
         NewsArticle article = newsArticleRepository.findByExternalId(externalId)
                 .orElseThrow(() -> new NotFoundException("Articolo non presente localmente (prima richiamalo dalla lista)"));
 
+        // controllo che l'utente non abbia già messo like
         if (articleLikeRepository.existsByUserAndArticle(user, article)) {
             throw new BadRequestException("Hai già messo like a questo articolo");
         }
         articleLikeRepository.save(new ArticleLike(user, article));
     }
 
-    // UNLIKE
+    // Rimuove like da un articolo
     @Transactional
     public void unlike(Long externalId, User user) {
         NewsArticle article = newsArticleRepository.findByExternalId(externalId)
@@ -106,7 +111,7 @@ public class ArticleInteractionService {
         articleLikeRepository.delete(like);
     }
 
-    // COMMENTA
+    // Aggiunge un commento a un articolo
     @Transactional
     public CommentDTO addComment(Long externalId, User user, CreateCommentRequest body) {
         if (body.getContent() == null || body.getContent().isBlank()) {
@@ -125,6 +130,7 @@ public class ArticleInteractionService {
         return dto;
     }
 
+    // Ottiene lista commenti di un articolo
     @Transactional(readOnly = true)
     public List<CommentDTO> getComments(Long externalId) {
         NewsArticle article = newsArticleRepository.findByExternalId(externalId)
@@ -142,6 +148,7 @@ public class ArticleInteractionService {
                 }).toList();
     }
 
+    // Elimina un commento (solo admin o autore)
     @Transactional
     public void deleteComment(Long externalId, Long commentId, User currentUser) {
         NewsArticle article = newsArticleRepository.findByExternalId(externalId)
@@ -150,18 +157,18 @@ public class ArticleInteractionService {
         ArticleComment comment = articleCommentRepository.findById(commentId)
                 .orElseThrow(() -> new NotFoundException("Commento non trovato"));
 
+        // controllo che il commento appartenga all'articolo corretto
         if (!comment.getArticle().equals(article)) {
             throw new BadRequestException("Il commento non appartiene a questo articolo");
         }
 
         boolean isAdmin = currentUser.getRole() == Role.ADMIN;
 
+        // controllo permessi
         if (!isAdmin && !comment.getAuthor().getId().equals(currentUser.getId())) {
             throw new BadRequestException("Non hai i permessi per eliminare questo commento");
         }
 
         articleCommentRepository.delete(comment);
     }
-
-
 }

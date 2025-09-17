@@ -11,6 +11,7 @@ import java.util.Map;
 @Configuration
 public class CloudinaryConfig {
 
+    // Qui prendo le credenziali dal file application.properties
     @Value("${cloudinary.cloud-name}")
     private String cloudName;
 
@@ -20,12 +21,16 @@ public class CloudinaryConfig {
     @Value("${cloudinary.api-secret}")
     private String apiSecret;
 
+    // Creo un bean di Cloudinary per poterlo usare in tutta l'app
     @Bean
     public Cloudinary cloudinary() {
+        // Metto le credenziali in una mappa, così le passa Cloudinary
         Map<String, String> config = new HashMap<>();
-        config.put("cloud_name", cloudName);
-        config.put("api_key", apiKey);
-        config.put("api_secret", apiSecret);
+        config.put("cloud_name", cloudName);  // il nome del mio account Cloudinary
+        config.put("api_key", apiKey);        // la chiave API
+        config.put("api_secret", apiSecret);  // il segreto API
+
+        // Ritorno l'oggetto Cloudinary configurato
         return new Cloudinary(config);
     }
 }

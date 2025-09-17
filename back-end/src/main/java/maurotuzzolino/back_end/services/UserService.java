@@ -36,6 +36,7 @@ public class UserService implements UserDetailsService {
     private final ArticleLikeRepository articleLikeRepository;
     private final ArticleCommentRepository articleCommentRepository;
 
+    // Inietto repository, encoder e servizio email
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService, PasswordResetTokenRepository tokenRepository, ArticleLikeRepository articleLikeRepository, ArticleCommentRepository articleCommentRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -45,7 +46,7 @@ public class UserService implements UserDetailsService {
         this.articleCommentRepository = articleCommentRepository;
     }
 
-    // Registrazione
+    // Registrazione utente
     public User registerUser(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException(request.getEmail());
@@ -61,7 +62,7 @@ public class UserService implements UserDetailsService {
 
         User savedUser = userRepository.save(user);
 
-        // Invia email di benvenuto
+        // Invio email di benvenuto
         try {
             emailService.sendEmail(
                     savedUser.getEmail(),
@@ -81,7 +82,7 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new NotFoundException("Utente non trovato con email: " + email));
     }
 
-    // Modifica completa (POST)
+    // Modifica completa dell'utente (POST)
     public User updateUserFull(Long id, User updatedUser) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Utente non trovato con ID: " + id));
@@ -95,11 +96,9 @@ public class UserService implements UserDetailsService {
         existingUser.setUsername(updatedUser.getUsername());
         existingUser.setEmail(updatedUser.getEmail());
 
-        // Controllo se la password è stata modificata
+        // Se la password cambia, la codifico e invio email notifica
         if (updatedUser.getPasswordHash() != null) {
             existingUser.setPasswordHash(passwordEncoder.encode(updatedUser.getPasswordHash()));
-
-            // Invia email notifica cambio password
             try {
                 emailService.sendEmail(
                         existingUser.getEmail(),
@@ -118,7 +117,7 @@ public class UserService implements UserDetailsService {
         return userRepository.save(existingUser);
     }
 
-    // Modifica parziale (PATCH)
+    // Modifica parziale dell'utente (PATCH)
     public User updateUserPartial(Long id, User partialUpdate) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Utente non trovato con ID: " + id));
@@ -127,10 +126,9 @@ public class UserService implements UserDetailsService {
         if (partialUpdate.getLastName() != null) existingUser.setLastName(partialUpdate.getLastName());
         if (partialUpdate.getUsername() != null) existingUser.setUsername(partialUpdate.getUsername());
         if (partialUpdate.getEmail() != null) existingUser.setEmail(partialUpdate.getEmail());
+
         if (partialUpdate.getPasswordHash() != null) {
             existingUser.setPasswordHash(passwordEncoder.encode(partialUpdate.getPasswordHash()));
-
-            // Invia email notifica cambio password
             try {
                 emailService.sendEmail(
                         existingUser.getEmail(),
@@ -141,6 +139,7 @@ public class UserService implements UserDetailsService {
                 e.printStackTrace();
             }
         }
+
         if (partialUpdate.getRole() != null) existingUser.setRole(partialUpdate.getRole());
 
         return userRepository.save(existingUser);
@@ -161,7 +160,7 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Utente non trovato con email: " + email));
     }
 
-    //Genera token e invia email
+    // Genera token per reset password e invia email
     public void createPasswordResetToken(String email, String appUrl) throws IOException {
         User user = findUserByEmail(email);
         String token = UUID.randomUUID().toString();
@@ -179,7 +178,7 @@ public class UserService implements UserDetailsService {
         );
     }
 
-    //Resetta la password usando il token
+    // Reset password usando token
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
                 .orElseThrow(() -> new BadRequestException("Token non valido"));
@@ -204,16 +203,15 @@ public class UserService implements UserDetailsService {
         return userRepository.save(user);
     }
 
-    // articoli piaciuti dall’utente
+    // Restituisce articoli piaciuti dall’utente
     public List<ArticleDTO> getLikedArticles(User user) {
         List<ArticleLike> likes = articleLikeRepository.findByUser(user);
-
         return likes.stream()
                 .map(like -> mapToDTO(like.getArticle(), user))
                 .collect(Collectors.toList());
     }
 
-    // conversione entity → DTO minimal
+    // Conversione entity → DTO minimal
     private ArticleDTO mapToDTO(NewsArticle article, User currentUser) {
         ArticleDTO dto = new ArticleDTO();
         dto.id = article.getExternalId();

@@ -19,34 +19,35 @@ public class ArticleController {
 
     private final ArticleInteractionService articleService;
 
+    // Inietto il service che si occupa di interazioni sugli articoli
     public ArticleController(ArticleInteractionService articleService) {
         this.articleService = articleService;
     }
 
-    // Lista arricchita: pubblica
+    // Endpoint per ottenere la lista degli articoli con stats (pubblico)
     @GetMapping
     public PagedResponse<ArticleDTO> list(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @AuthenticationPrincipal User currentUser) {
+            @RequestParam(defaultValue = "0") int page,  // pagina di default = 0
+            @RequestParam(defaultValue = "20") int size, // size di default = 20
+            @AuthenticationPrincipal User currentUser) { // Spring inietta l'utente loggato se c'è
         return articleService.getArticlesWithStats(page, size, currentUser);
     }
 
-    // Metti like (autenticato)
+    // Endpoint per mettere like a un articolo (richiede autenticazione)
     @PostMapping("/{externalId}/like")
     @PreAuthorize("isAuthenticated()")
     public void like(@PathVariable Long externalId, @AuthenticationPrincipal User currentUser) {
         articleService.like(externalId, currentUser);
     }
 
-    // Togli like (autenticato)
+    // Endpoint per togliere like (richiede autenticazione)
     @DeleteMapping("/{externalId}/like")
     @PreAuthorize("isAuthenticated()")
     public void unlike(@PathVariable Long externalId, @AuthenticationPrincipal User currentUser) {
         articleService.unlike(externalId, currentUser);
     }
 
-    // Aggiungi commento (autenticato)
+    // Endpoint per aggiungere un commento (richiede autenticazione)
     @PostMapping("/{externalId}/comments")
     @PreAuthorize("isAuthenticated()")
     public CommentDTO comment(@PathVariable Long externalId,
@@ -55,10 +56,11 @@ public class ArticleController {
         return articleService.addComment(externalId, currentUser, body);
     }
 
-    // Lista commenti (pubblico o autenticato)
+    // Endpoint per ottenere lista commenti di un articolo (pubblico o autenticato)
     @GetMapping("/{externalId}/comments")
     public List<CommentDTO> comments(@PathVariable Long externalId,
                                      @AuthenticationPrincipal User currentUser) {
+        // trasformo entity Comment in DTO
         return articleService.getComments(externalId).stream().map(c -> {
             CommentDTO dto = new CommentDTO();
             dto.id = c.getId();
@@ -67,16 +69,16 @@ public class ArticleController {
             dto.content = c.getContent();
             dto.createdAt = c.getCreatedAt();
 
+            // controllo se l'utente può cancellare il commento: admin o autore
             boolean isAdmin = currentUser != null && currentUser.getRole() == Role.ADMIN;
             boolean isAuthor = currentUser != null && currentUser.getId().equals(c.getAuthorId());
-
             dto.canDelete = isAdmin || isAuthor;
 
             return dto;
         }).toList();
     }
 
-    // Elimina commento (solo admin o autore)
+    // Endpoint per eliminare commento (solo admin o autore)
     @DeleteMapping("/{externalId}/comments/{commentId}")
     @PreAuthorize("hasRole('ADMIN') or #currentUser.id == @articleCommentRepository.findById(#commentId).get().author.id")
     public void deleteComment(@PathVariable Long externalId,
