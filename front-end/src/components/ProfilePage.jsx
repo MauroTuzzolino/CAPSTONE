@@ -7,7 +7,7 @@ import { FaCommentDots, FaHeartBroken } from "react-icons/fa";
 // Import delle azioni Redux
 import { loadUser, logout } from "../redux/actions/authActions";
 import { fetchLikedArticles, fetchComments, addComment, deleteComment, toggleLikeArticle } from "../redux/actions/articleActions";
-import { updateUser } from "../redux/actions/userActions";
+import { updateUserSelf } from "../redux/actions/userActions";
 
 // Stile CSS dedicato
 import "../css/ProfilePage.css";
@@ -81,7 +81,7 @@ const ProfilePage = () => {
   // Salvataggio modifiche profilo
   const handleSave = async () => {
     try {
-      await dispatch(updateUser(formData));
+      await dispatch(updateUserSelf(formData));
       setEditing(false);
     } catch (err) {
       console.error("Errore durante l'aggiornamento:", err);

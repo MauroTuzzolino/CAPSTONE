@@ -27,23 +27,19 @@ export const fetchUsers = () => async (dispatch) => {
 };
 
 // ------------------------ UPDATE USER ------------------------
-/**
- * Aggiorna i dati del profilo dell'utente loggato.
- * Può essere usato sia per update personale sia per update admin.
- */
-export const updateUser = (userData) => async (dispatch, getState) => {
+// Aggiorna i dati del profilo dell'utente loggato
+export const updateUserSelf = (userData) => async (dispatch, getState) => {
   const token = localStorage.getItem("token");
   if (!token) return;
 
   try {
     dispatch({ type: "USER_UPDATE_REQUEST" });
 
-    // Recupera ID utente dallo state Redux
     const { user } = getState().auth;
     if (!user) throw new Error("Utente non loggato");
 
     const res = await fetch(`http://localhost:3001/api/users/${user.id}`, {
-      method: "PATCH", // PATCH per aggiornamento parziale
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -53,11 +49,41 @@ export const updateUser = (userData) => async (dispatch, getState) => {
 
     if (!res.ok) {
       const errData = await res.json();
-      throw new Error(errData.message || "Error while updating");
+      throw new Error(errData.message || "Errore aggiornamento profilo");
     }
 
     const updatedUser = await res.json();
     dispatch({ type: "USER_LOADED", payload: updatedUser });
+  } catch (err) {
+    console.error(err);
+    dispatch({ type: "USER_UPDATE_FAIL", payload: err.message });
+  }
+};
+
+// Aggiorna un utente specifico (solo admin)
+export const updateUserAdmin = (userId, userData) => async (dispatch) => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    dispatch({ type: "USER_UPDATE_REQUEST" });
+
+    const res = await fetch(`http://localhost:3001/api/users/${userId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.message || "Errore aggiornamento utente");
+    }
+
+    const updatedUser = await res.json();
+    dispatch({ type: "USER_UPDATED", payload: updatedUser });
   } catch (err) {
     console.error(err);
     dispatch({ type: "USER_UPDATE_FAIL", payload: err.message });

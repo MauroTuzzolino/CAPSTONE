@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchUsers, deleteUser, updateUser } from "../redux/actions/userActions";
+import { fetchUsers, deleteUser, updateUserAdmin } from "../redux/actions/userActions";
 
 const AdminUsers = () => {
   const dispatch = useDispatch();
@@ -55,7 +55,7 @@ const AdminUsers = () => {
   // Salva modifiche
   const handleSave = () => {
     if (!selectedUser) return;
-    dispatch(updateUser(selectedUser.id, formData));
+    dispatch(updateUserAdmin(selectedUser.id, formData));
     showToast("Utente aggiornato con successo", "success");
     handleClose();
   };
@@ -137,7 +137,7 @@ const AdminUsers = () => {
           <Modal.Title>Edit User</Modal.Title>
         </Modal.Header>
         <Modal.Body className="bg-light">
-          <Form>
+          <Form className="text-dark">
             <Form.Group className="mb-2">
               <Form.Label>Name</Form.Label>
               <Form.Control name="firstName" value={formData.firstName || ""} onChange={handleChange} className="rounded" />
